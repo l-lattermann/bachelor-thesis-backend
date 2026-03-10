@@ -1,0 +1,115 @@
+{
+    "system": {
+        "ready": true,
+        "time": 1773149006.6991045,
+        "uptime": 3004.21,
+        "firmware": {
+            "active_image": {
+                "image_version": "26.01.0"
+            },
+            "inactive_image": {
+                "image_version": "22.04.0"
+            },
+            "next_boot_image": "active_image",
+            "fallback_booted": false
+        },
+        "model_name": "rc_visard 160c",
+        "pipelines": {
+            "config": {
+                "0": {
+                    "type": "rc_visard"
+                }
+            },
+            "pending_changes": false,
+            "max_pipelines": 1,
+            "valid_types": [
+                "rc_visard"
+            ]
+        },
+        "ui_lock": {
+            "enabled": false
+        },
+        "hostname": "rc-visard-02940904",
+        "serial": "02940904",
+        "ptp_status": {
+            "state": "off",
+            "master_ip": "",
+            "offset": 0,
+            "offset_mean": 0,
+            "offset_dev": 0
+        },
+        "network": {
+            "ip_address": "169.254.9.247",
+            "subnet_mask": "255.255.0.0",
+            "default_gateway": "",
+            "current_method": "LinkLocal",
+            "settings": {
+                "dhcp_enabled": true,
+                "persistent_ip_enabled": false,
+                "persistent_ip_address": "192.168.0.111",
+                "persistent_subnet_mask": "255.255.255.0",
+                "persistent_default_gateway": ""
+            }
+        },
+        "dns": {
+            "dns_servers": [],
+            "manual_dns_servers": []
+        },
+        "ntp": {
+            "synchronized": false,
+            "offset": 0,
+            "enabled": true,
+            "selected_ntp_servers": [],
+            "manual_ntp_servers": []
+        },
+        "link_speed": 1000,
+        "mac": "00:14:2d:2c:df:e8",
+        "maxdate": "20260310"
+    },
+    "license": {
+        "components": {
+            "iocontrol": true,
+            "hand_eye_calibration": true,
+            "rectification": true,
+            "system": true,
+            "image_version": true,
+            "svo": true,
+            "calibration": true,
+            "self_calibration": true,
+            "stereo": true,
+            "stereo_plus": true,
+            "loadcarrier": true,
+            "collisioncheck": false,
+            "collisioncheck_schmalz": false,
+            "collisioncheck_schunk": false,
+            "boxpick": false,
+            "boxpick_match": false,
+            "april_tag_detection": false,
+            "qr_code_detection": false,
+            "slam": false,
+            "silhouettematch": false,
+            "silhouettematchai": false,
+            "itempick": false,
+            "itempickai": false,
+            "fusion": true
+        },
+        "components_constraints": {},
+        "valid": true
+    },
+    "disk_info": {
+        "/": {
+            "size": 6126870528,
+            "avail": 2357956608
+        },
+        "/data": {
+            "size": 3018796032,
+            "avail": 2878758912
+        },
+        "/inactive": {
+            "size": 6128410624,
+            "avail": 2730692608
+        }
+    },
+    "board_rev": "V1.1A",
+    "u-boot_version": "U-Boot 2016.11-00152-g5b7e23f-dirty (Oct 24 2017 - 18:06:06 +0200)"
+}

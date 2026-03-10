@@ -1,0 +1,195 @@
+{
+    "pipelines": {
+        "0": {
+            "type": "rc_visard",
+            "ready": true,
+            "nodes": {
+                "rc_iocontrol": {
+                    "status": {
+                        "status": "running",
+                        "timestamp": 1773142730.966127,
+                        "values": {}
+                    }
+                },
+                "rc_camera": {
+                    "status": {
+                        "status": "running",
+                        "timestamp": 1773144287.1976686,
+                        "values": {
+                            "gain": "0",
+                            "exp": "0.00982234",
+                            "gamma": "1",
+                            "out1_reduction": "0",
+                            "brightness": "0.25",
+                            "fps": "20.2",
+                            "time": "0.0376815",
+                            "width": "1280",
+                            "height": "960",
+                            "focal": "0.862789",
+                            "baseline": "0.160053",
+                            "selfcalib_offset": "0",
+                            "selfcalib_counter": "0",
+                            "color": "1",
+                            "temp_left": "32.6",
+                            "temp_right": "31.9",
+                            "test": "0",
+                            "params_override_active": "0",
+                            "device_trigger_sources": "[]"
+                        }
+                    }
+                },
+                "rc_measure": {
+                    "status": {
+                        "status": "running",
+                        "timestamp": 1773144287.664587,
+                        "values": {}
+                    }
+                },
+                "rc_hand_eye_calibration": {
+                    "status": {
+                        "status": "running",
+                        "timestamp": 1773142730.8375986,
+                        "values": {}
+                    }
+                },
+                "rc_gev_server": {
+                    "status": {
+                        "status": "running",
+                        "timestamp": 1773144286.914154,
+                        "values": {
+                            "params_locked": "0",
+                            "streaming": "0",
+                            "packet_size": "516",
+                            "packet_resends": "0",
+                            "dropped_frames": "0",
+                            "sent_frames": "0",
+                            "user_defined_name": "",
+                            "application_ip": ""
+                        }
+                    }
+                },
+                "rc_slam": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773144288.0298207,
+                        "values": {
+                            "trajectory_poses": "0",
+                            "map_frames": "0",
+                            "state": "IDLE"
+                        }
+                    }
+                },
+                "rc_stereocalib": {
+                    "status": {
+                        "status": "running",
+                        "timestamp": 1773142731.8215725,
+                        "values": {}
+                    }
+                },
+                "rc_stereomatching": {
+                    "status": {
+                        "status": "running",
+                        "timestamp": 1773144286.6739178,
+                        "values": {
+                            "time_matching": "0.374",
+                            "time_postprocessing": "0.144",
+                            "latency": "0.538",
+                            "fps": "0",
+                            "width": "640",
+                            "height": "480",
+                            "mindepth": "0.398",
+                            "maxdepth": "100",
+                            "reduced_depth_range": "0"
+                        }
+                    }
+                },
+                "rc_stereovisodo": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773144287.9001505,
+                        "values": {}
+                    }
+                },
+                "rc_dynamics": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773144286.663756,
+                        "values": {
+                            "state": "IDLE"
+                        }
+                    }
+                },
+                "rc_collision_check": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773144288.5068357,
+                        "values": {}
+                    }
+                },
+                "rc_stereo_ins": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773144286.1733932,
+                        "values": {
+                            "state": "IDLE"
+                        }
+                    }
+                },
+                "rc_load_carrier": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773144288.3996453,
+                        "values": {
+                            "last_timestamp_processed": "1773143747.710684967",
+                            "load_carrier_detection_time": "2.092475781",
+                            "data_acquisition_time": "0.7306684990000001"
+                        }
+                    }
+                },
+                "rc_itempick": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773144286.838549,
+                        "values": {
+                            "state": "IDLE"
+                        }
+                    }
+                },
+                "rc_april_tag_detect": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773144288.2591562,
+                        "values": {
+                            "state": "IDLE"
+                        }
+                    }
+                },
+                "rc_boxpick": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773144287.9919698,
+                        "values": {
+                            "state": "IDLE"
+                        }
+                    }
+                },
+                "rc_qr_code_detect": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773144287.8919134,
+                        "values": {
+                            "state": "IDLE"
+                        }
+                    }
+                },
+                "rc_silhouettematch": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773144287.476291,
+                        "values": {}
+                    }
+                }
+            }
+        }
+    }
+}
