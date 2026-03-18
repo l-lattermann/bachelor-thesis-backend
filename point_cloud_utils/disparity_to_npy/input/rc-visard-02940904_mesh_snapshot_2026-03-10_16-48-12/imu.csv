@@ -1,0 +1,2 @@
+timestamp_sec,timestamp_nsec,linear_acceleration_x,linear_acceleration_y,linear_acceleration_z,angular_velocity_x,angular_velocity_y,angular_velocity_z
+1773161292,644103582,0.093577,-5.073132,-8.378227,0.040440,0.051082,-0.129832

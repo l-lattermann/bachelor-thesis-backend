@@ -1,0 +1,195 @@
+{
+    "pipelines": {
+        "0": {
+            "type": "rc_visard",
+            "ready": true,
+            "nodes": {
+                "rc_gev_server": {
+                    "status": {
+                        "status": "running",
+                        "timestamp": 1773764188.5658588,
+                        "values": {
+                            "params_locked": "0",
+                            "streaming": "0",
+                            "packet_size": "516",
+                            "packet_resends": "0",
+                            "dropped_frames": "0",
+                            "sent_frames": "0",
+                            "user_defined_name": "",
+                            "application_ip": ""
+                        }
+                    }
+                },
+                "rc_camera": {
+                    "status": {
+                        "status": "running",
+                        "timestamp": 1773764188.1836758,
+                        "values": {
+                            "color": "1",
+                            "test": "1",
+                            "params_override_active": "0",
+                            "exp": "0.005",
+                            "gain": "0",
+                            "gamma": "1",
+                            "out1_reduction": "0",
+                            "brightness": "0.3",
+                            "fps": "20.2",
+                            "width": "1280",
+                            "height": "960",
+                            "focal": "1.85915",
+                            "baseline": "0.16",
+                            "selfcalib_offset": "0",
+                            "selfcalib_counter": "0"
+                        }
+                    }
+                },
+                "rc_collision_check": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773764188.0609145,
+                        "values": {}
+                    }
+                },
+                "rc_stereocalib": {
+                    "status": {
+                        "status": "running",
+                        "timestamp": 1773322792.1107259,
+                        "values": {}
+                    }
+                },
+                "rc_silhouettematch": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773764188.0892432,
+                        "values": {}
+                    }
+                },
+                "rc_hand_eye_calibration": {
+                    "status": {
+                        "status": "running",
+                        "timestamp": 1773322797.170472,
+                        "values": {}
+                    }
+                },
+                "rc_stereomatching": {
+                    "status": {
+                        "status": "running",
+                        "timestamp": 1773764189.1545517,
+                        "values": {
+                            "time_matching": "0.029",
+                            "time_postprocessing": "0.02",
+                            "latency": "0.07",
+                            "fps": "0.2",
+                            "width": "640",
+                            "height": "480",
+                            "mindepth": "0.4",
+                            "maxdepth": "2.6",
+                            "reduced_depth_range": "0"
+                        }
+                    }
+                },
+                "rc_load_carrier": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773764188.324147,
+                        "values": {
+                            "last_timestamp_processed": "1773756836.229710031",
+                            "load_carrier_detection_time": "0.013249460000000001",
+                            "data_acquisition_time": "0.130622931"
+                        }
+                    }
+                },
+                "rc_measure": {
+                    "status": {
+                        "status": "running",
+                        "timestamp": 1773764189.286618,
+                        "values": {}
+                    }
+                },
+                "rc_april_tag_detect": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773764189.207874,
+                        "values": {
+                            "state": "IDLE"
+                        }
+                    }
+                },
+                "rc_qr_code_detect": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773764188.179421,
+                        "values": {
+                            "state": "IDLE"
+                        }
+                    }
+                },
+                "rc_camera_tl": {
+                    "status": {
+                        "status": "running",
+                        "timestamp": 1773764189.3084307,
+                        "values": {
+                            "device": "rc_test:1000",
+                            "matching_devices": "unique",
+                            "supported": "1",
+                            "device_calibrated": "1",
+                            "device_supports_hdr": "0",
+                            "device_trigger_sources": "[]",
+                            "ready": "1",
+                            "supported_versions": "all",
+                            "imu_available": "0",
+                            "calibration_supported": "0",
+                            "ip_address": "",
+                            "model_name": "rc_test 1773764169",
+                            "device_type": "rc_test",
+                            "device_user_name": "test",
+                            "device_version": "25.01.0",
+                            "device_serial": "1000",
+                            "device_link_speed": "1000",
+                            "gev_packet_size": "0",
+                            "connection_loss_total": "0",
+                            "complete_buffers_total": "8801043",
+                            "incomplete_buffers_total": "0",
+                            "image_receive_timeouts_total": "0",
+                            "current_reconnect_trial": "1",
+                            "image_latency": "0.00849708",
+                            "device_time_offset_ms": "0"
+                        }
+                    }
+                },
+                "rc_iocontrol": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773764189.3098824,
+                        "values": {}
+                    }
+                },
+                "rc_boxpick": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773764189.7284188,
+                        "values": {
+                            "state": "IDLE"
+                        }
+                    }
+                },
+                "rc_itempick": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773764189.644087,
+                        "values": {
+                            "state": "IDLE"
+                        }
+                    }
+                },
+                "rc_cadmatch": {
+                    "status": {
+                        "status": "idle",
+                        "timestamp": 1773764189.2914805,
+                        "values": {}
+                    }
+                }
+            }
+        }
+    }
+}

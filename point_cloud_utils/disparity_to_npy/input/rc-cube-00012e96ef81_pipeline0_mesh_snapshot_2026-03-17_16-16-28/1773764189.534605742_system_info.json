@@ -1,0 +1,143 @@
+{
+    "system": {
+        "hostname": "rc-cube-00012e96ef81",
+        "mac": "00:01:2e:96:ef:81",
+        "serial": "00012e96ef81",
+        "uptime": 2878008.11,
+        "time": 1773764189.5350862,
+        "ptp_status": {
+            "state": "off",
+            "master_ip": "",
+            "offset": 0,
+            "offset_mean": 0,
+            "offset_dev": 0
+        },
+        "link_speed": 1000,
+        "ready": true,
+        "firmware": {
+            "active_image": {
+                "image_version": "25.01.0"
+            },
+            "inactive_image": {
+                "image_version": "24.10.0"
+            },
+            "next_boot_image": "active_image",
+            "fallback_booted": false
+        },
+        "model_name": "rc_cube S",
+        "network": {
+            "ip_address": "172.27.5.9",
+            "subnet_mask": "255.255.255.0",
+            "default_gateway": "172.27.5.1",
+            "current_method": "DHCP",
+            "settings": {
+                "dhcp_enabled": true,
+                "persistent_ip_enabled": false,
+                "persistent_ip_address": "10.0.2.151",
+                "persistent_subnet_mask": "255.255.252.0",
+                "persistent_default_gateway": "10.0.3.254"
+            }
+        },
+        "pipelines": {
+            "config": {
+                "0": {
+                    "type": "rc_visard"
+                }
+            },
+            "pending_changes": false,
+            "max_pipelines": 2
+        },
+        "ui_lock": {
+            "enabled": false
+        },
+        "dns": {
+            "dns_servers": [
+                "172.27.24.100",
+                "172.27.24.101"
+            ],
+            "manual_dns_servers": []
+        },
+        "ntp": {
+            "synchronized": true,
+            "offset": 0.000148086,
+            "enabled": true,
+            "selected_ntp_servers": [
+                "131.188.3.220",
+                "185.125.190.56",
+                "185.125.190.58",
+                "185.125.190.57",
+                "217.144.138.234",
+                "185.51.192.63"
+            ],
+            "manual_ntp_servers": []
+        },
+        "maxdate": "20260317",
+        "dongle_id": "dinkey:2149986906",
+        "reboot_required": false,
+        "userspace": {
+            "available": false,
+            "enabled": false
+        },
+        "sensor_interfaces": {
+            "sensor0": {
+                "link_speed": -1
+            }
+        },
+        "gpus": [
+            {
+                "name": "NVIDIA GeForce RTX 2080",
+                "reset_required": false
+            }
+        ]
+    },
+    "license": {
+        "components": {
+            "cadmatch": true,
+            "stereo": true,
+            "calibration": true,
+            "hand_eye_calibration": true,
+            "rectification": true,
+            "stereo_plus": true,
+            "iocontrol": true,
+            "april_tag_detection": true,
+            "qr_code_detection": true,
+            "itempick": true,
+            "boxpick": true,
+            "eki_bridge": true,
+            "silhouettematch": true,
+            "boxpick_lego-prerelease": true,
+            "itempickai": true,
+            "boxpick_match": true,
+            "opc_ua_bridge": true,
+            "image_version": true,
+            "self_calibration": false,
+            "loadcarrier": true,
+            "collisioncheck": true,
+            "collisioncheck_schmalz": false,
+            "collisioncheck_schunk": false
+        },
+        "components_constraints": {
+            "image_version": {
+                "max_version": "27.01"
+            }
+        },
+        "valid": true
+    },
+    "disk_info": {
+        "/": {
+            "size": 30852030464,
+            "avail": 16939307008
+        },
+        "/data": {
+            "size": 65732751360,
+            "avail": 51323334656
+        },
+        "/inactive": {
+            "size": 30850105344,
+            "avail": 18389200896
+        }
+    },
+    "board_vendor": "ZOTAC",
+    "board_name": "ZBOX-EN72080V/EN72070V/EN52060V/EN51660T",
+    "bios_version": "5.13"
+}

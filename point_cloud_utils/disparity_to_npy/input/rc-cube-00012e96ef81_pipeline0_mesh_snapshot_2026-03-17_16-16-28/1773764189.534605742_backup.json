@@ -1,0 +1,1528 @@
+{
+    "model_name": "rc_cube S",
+    "image_version": "25.01.0",
+    "serial": "00012e96ef81",
+    "pipelines": {
+        "0": {
+            "type": "rc_visard",
+            "nodes": {
+                "rc_camera": {
+                    "parameters": [
+                        {
+                            "name": "fps",
+                            "type": "float64",
+                            "value": 20.0,
+                            "min": 4.0,
+                            "max": 25.0,
+                            "default": 25.0,
+                            "description": "Frames per second in Hertz"
+                        },
+                        {
+                            "name": "exp_control",
+                            "type": "string",
+                            "value": "Auto",
+                            "min": "",
+                            "max": "",
+                            "default": "Auto",
+                            "description": "Exposure control mode: [Manual, Auto, HDR]"
+                        },
+                        {
+                            "name": "exp_auto",
+                            "type": "bool",
+                            "value": true,
+                            "min": false,
+                            "max": true,
+                            "default": true,
+                            "description": "Switching between auto and manual exposure (deprecated, please use exp_control instead)"
+                        },
+                        {
+                            "name": "exp_auto_mode",
+                            "type": "string",
+                            "value": "Normal",
+                            "min": "",
+                            "max": "",
+                            "default": "Normal",
+                            "description": "Auto-exposure mode: [Normal, Out1High, AdaptiveOut1]"
+                        },
+                        {
+                            "name": "exp_max",
+                            "type": "float64",
+                            "value": 0.018,
+                            "min": 6.6e-05,
+                            "max": 0.1,
+                            "default": 0.018,
+                            "description": "Maximum exposure time in seconds in Auto exposure mode"
+                        },
+                        {
+                            "name": "exp_auto_average_max",
+                            "type": "float64",
+                            "value": 0.75,
+                            "min": 0.0,
+                            "max": 1.0,
+                            "default": 0.75,
+                            "description": "Maximum average intensity in Auto exposure mode"
+                        },
+                        {
+                            "name": "exp_auto_average_min",
+                            "type": "float64",
+                            "value": 0.25,
+                            "min": 0.0,
+                            "max": 1.0,
+                            "default": 0.25,
+                            "description": "Minimum average intensity in Auto exposure mode"
+                        },
+                        {
+                            "name": "acquisition_mode",
+                            "type": "string",
+                            "value": "Continuous",
+                            "min": "",
+                            "max": "",
+                            "default": "Continuous",
+                            "description": "Acquisition mode: [Continuous, Trigger]"
+                        },
+                        {
+                            "name": "trigger_source",
+                            "type": "string",
+                            "value": "Software",
+                            "min": "",
+                            "max": "",
+                            "default": "Software",
+                            "description": "Trigger source: [Software, In1, In2, In3, In4]"
+                        },
+                        {
+                            "name": "trigger_activation",
+                            "type": "string",
+                            "value": "RisingEdge",
+                            "min": "",
+                            "max": "",
+                            "default": "RisingEdge",
+                            "description": "Trigger activation: [RisingEdge, FallingEdge, AnyEdge]"
+                        },
+                        {
+                            "name": "exp_value",
+                            "type": "float64",
+                            "value": 0.005,
+                            "min": 0.005,
+                            "max": 0.005,
+                            "default": 0.005,
+                            "description": "Exposure time in seconds in Manual exposure mode"
+                        },
+                        {
+                            "name": "gain_value",
+                            "type": "float64",
+                            "value": 0.0,
+                            "min": 0.0,
+                            "max": 0.0,
+                            "default": 0.0,
+                            "description": "Gain value in decibel if not in Auto exposure mode"
+                        },
+                        {
+                            "name": "gamma",
+                            "type": "float64",
+                            "value": 1.0,
+                            "min": 1.0,
+                            "max": 1.0,
+                            "default": 1.0,
+                            "description": "Gamma factor"
+                        },
+                        {
+                            "name": "exp_offset_x",
+                            "type": "int32",
+                            "value": 0,
+                            "min": 0,
+                            "max": 1279,
+                            "default": 0,
+                            "description": "First column of auto exposure region"
+                        },
+                        {
+                            "name": "exp_offset_y",
+                            "type": "int32",
+                            "value": 0,
+                            "min": 0,
+                            "max": 959,
+                            "default": 0,
+                            "description": "First row of auto exposure region"
+                        },
+                        {
+                            "name": "exp_width",
+                            "type": "int32",
+                            "value": 0,
+                            "min": 0,
+                            "max": 1279,
+                            "default": 0,
+                            "description": "Width of auto exposure region. 0 for whole image."
+                        },
+                        {
+                            "name": "exp_height",
+                            "type": "int32",
+                            "value": 0,
+                            "min": 0,
+                            "max": 959,
+                            "default": 0,
+                            "description": "Height of auto exposure region. 0 for whole image."
+                        },
+                        {
+                            "name": "wb_auto",
+                            "type": "bool",
+                            "value": true,
+                            "min": false,
+                            "max": true,
+                            "default": true,
+                            "description": "Switching white balance on and off (only for color camera)"
+                        },
+                        {
+                            "name": "wb_ratio_red",
+                            "type": "float64",
+                            "value": 1.0,
+                            "min": 1.0,
+                            "max": 1.0,
+                            "default": 1.0,
+                            "description": "Red to green balance ratio if wb_auto is false (only for color camera)"
+                        },
+                        {
+                            "name": "wb_ratio_blue",
+                            "type": "float64",
+                            "value": 1.0,
+                            "min": 1.0,
+                            "max": 1.0,
+                            "default": 1.0,
+                            "description": "Blue to green balance ratio if wb_auto is false (only for color camera)"
+                        }
+                    ]
+                },
+                "rc_collision_check": {
+                    "parameters": [
+                        {
+                            "name": "collision_dist",
+                            "type": "float64",
+                            "value": 0.01,
+                            "min": 0.0,
+                            "max": 0.1,
+                            "default": 0.01,
+                            "description": "Minimum distance in meters between any element of the gripper and the load carrier or the base plane (only SilhouetteMatch) for a collision-free grasp"
+                        },
+                        {
+                            "name": "check_flange",
+                            "type": "bool",
+                            "value": true,
+                            "min": false,
+                            "max": true,
+                            "default": true,
+                            "description": "Whether all grasps with the flange inside the load carrier should be marked as colliding"
+                        },
+                        {
+                            "name": "check_bottom",
+                            "type": "bool",
+                            "value": true,
+                            "min": false,
+                            "max": true,
+                            "default": true,
+                            "description": "Whether to enable collision checking with the bottom of the load carrier"
+                        }
+                    ]
+                },
+                "rc_stereocalib": {
+                    "parameters": [
+                        {
+                            "name": "grid_width",
+                            "type": "float64",
+                            "value": 0.39,
+                            "min": 0.0,
+                            "max": 10.0,
+                            "default": 0.0,
+                            "description": "Physical width of grid in m"
+                        },
+                        {
+                            "name": "grid_height",
+                            "type": "float64",
+                            "value": 0.27,
+                            "min": 0.0,
+                            "max": 10.0,
+                            "default": 0.0,
+                            "description": "Physical height of grid in m"
+                        },
+                        {
+                            "name": "mirror_visualization",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Mirror the annotated visualization images"
+                        },
+                        {
+                            "name": "snap",
+                            "type": "float64",
+                            "value": 1.0,
+                            "min": 0.2,
+                            "max": 8.0,
+                            "default": 1.0,
+                            "description": "Size factor for snap area"
+                        },
+                        {
+                            "name": "exp_control",
+                            "type": "string",
+                            "value": "Auto",
+                            "min": "",
+                            "max": "",
+                            "default": "Auto",
+                            "description": "Exposure control mode: [Manual, Auto, HDR]"
+                        },
+                        {
+                            "name": "exp_max",
+                            "type": "float64",
+                            "value": 0.015,
+                            "min": 6.6e-05,
+                            "max": 0.1,
+                            "default": 0.015,
+                            "description": "Maximum exposure time in seconds if exp_auto is true"
+                        },
+                        {
+                            "name": "exp_value",
+                            "type": "float64",
+                            "value": 0.01,
+                            "min": 6.6e-05,
+                            "max": 0.1,
+                            "default": 0.01,
+                            "description": "Manual exposure time in seconds if exp_auto is false"
+                        },
+                        {
+                            "name": "gain_value",
+                            "type": "float64",
+                            "value": 0.0,
+                            "min": 0.0,
+                            "max": 48.0,
+                            "default": 0.0,
+                            "description": "Manual gain value in decibel if exp_auto is false"
+                        }
+                    ]
+                },
+                "rc_silhouettematch": {
+                    "parameters": [
+                        {
+                            "name": "check_collisions",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Whether to check for collisions when a gripper is defined for a grasp"
+                        },
+                        {
+                            "name": "check_collisions_during_retraction",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Whether to check for collisions between the object in the gripper and the load carrier during retraction"
+                        },
+                        {
+                            "name": "check_collisions_with_base_plane",
+                            "type": "bool",
+                            "value": true,
+                            "min": false,
+                            "max": true,
+                            "default": true,
+                            "description": "Whether to check for collisions between gripper and base plane"
+                        },
+                        {
+                            "name": "check_collisions_with_matches",
+                            "type": "bool",
+                            "value": true,
+                            "min": false,
+                            "max": true,
+                            "default": true,
+                            "description": "Whether to check for collisions between gripper and detected matches"
+                        },
+                        {
+                            "name": "check_collisions_with_point_cloud",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Whether to check for collisions between gripper and the point cloud"
+                        },
+                        {
+                            "name": "only_highest_priority_grasps",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Whether to return only the highest priority level grasps"
+                        },
+                        {
+                            "name": "max_number_of_detected_objects",
+                            "type": "int32",
+                            "value": 10,
+                            "min": 1,
+                            "max": 20,
+                            "default": 10,
+                            "description": "Maximum number of detected objects"
+                        },
+                        {
+                            "name": "edge_sensitivity",
+                            "type": "float64",
+                            "value": 0.7,
+                            "min": 0.1,
+                            "max": 1.0,
+                            "default": 0.7,
+                            "description": "Sensitivity of the edge detector"
+                        },
+                        {
+                            "name": "match_max_distance",
+                            "type": "float64",
+                            "value": 3.0,
+                            "min": 0.1,
+                            "max": 10.0,
+                            "default": 3.0,
+                            "description": "Maximum allowed distance in pixels between the template and the detected edges in the image"
+                        },
+                        {
+                            "name": "match_percentile",
+                            "type": "float64",
+                            "value": 0.8,
+                            "min": 0.7,
+                            "max": 1.0,
+                            "default": 0.8,
+                            "description": "Percentage of template pixels that must be within the maximum distance to successfully match the template"
+                        },
+                        {
+                            "name": "point_cloud_enhancement",
+                            "type": "string",
+                            "value": "Off",
+                            "min": "",
+                            "max": "",
+                            "default": "Off",
+                            "description": "Type of enhancement of the point cloud using the base plane: [Off, ReplaceBright]"
+                        },
+                        {
+                            "name": "quality",
+                            "type": "string",
+                            "value": "High",
+                            "min": "",
+                            "max": "",
+                            "default": "High",
+                            "description": "Quality: [Low, Medium, High]"
+                        }
+                    ],
+                    "preferred_orientation": {
+                        "pose_frame": "camera",
+                        "orientation": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0,
+                            "w": 1.0
+                        }
+                    },
+                    "sorting_strategies": {
+                        "preferred_orientation": {
+                            "weight": 0.0
+                        },
+                        "direction": {
+                            "weight": 0.0,
+                            "vector": {
+                                "x": 0.0,
+                                "y": 0.0,
+                                "z": 0.0
+                            },
+                            "pose_frame": ""
+                        },
+                        "distance_to_point": {
+                            "weight": 0.0,
+                            "point": {
+                                "x": 0.0,
+                                "y": 0.0,
+                                "z": 0.0
+                            },
+                            "pose_frame": "",
+                            "farthest_first": false
+                        }
+                    }
+                },
+                "rc_hand_eye_calibration": {
+                    "parameters": [
+                        {
+                            "name": "grid_width",
+                            "type": "float64",
+                            "value": 0.26,
+                            "min": 0.0,
+                            "max": 10.0,
+                            "default": 0.0,
+                            "description": "The width of the calibration pattern in meters"
+                        },
+                        {
+                            "name": "grid_height",
+                            "type": "float64",
+                            "value": 0.18,
+                            "min": 0.0,
+                            "max": 10.0,
+                            "default": 0.0,
+                            "description": "The height of the calibration pattern in meters"
+                        },
+                        {
+                            "name": "robot_mounted",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": true,
+                            "description": "Whether the camera is mounted on the robot"
+                        },
+                        {
+                            "name": "tag_ids",
+                            "type": "string",
+                            "value": "",
+                            "min": "",
+                            "max": "",
+                            "default": "",
+                            "description": "Optional, comma separated list of AprilTag IDs that will be calibrated too"
+                        },
+                        {
+                            "name": "tcp_rotation_axis",
+                            "type": "int32",
+                            "value": -1,
+                            "min": -1,
+                            "max": 2,
+                            "default": -1,
+                            "description": "-1 for off, 0 for x, 1 for y, 2 for z"
+                        },
+                        {
+                            "name": "tcp_offset",
+                            "type": "float64",
+                            "value": 0.0,
+                            "min": -10.0,
+                            "max": 10.0,
+                            "default": 0.0,
+                            "description": "Offset from TCP along tcp_rotation_axis"
+                        }
+                    ]
+                },
+                "rc_stereomatching": {
+                    "parameters": [
+                        {
+                            "name": "acquisition_mode",
+                            "type": "string",
+                            "value": "SingleFrame",
+                            "min": "",
+                            "max": "",
+                            "default": "Continuous",
+                            "description": "Acquisition mode: [Continuous, SingleFrame, SingleFrameOut1]"
+                        },
+                        {
+                            "name": "exposure_adapt_timeout",
+                            "type": "float64",
+                            "value": 0.0,
+                            "min": 0.0,
+                            "max": 2.0,
+                            "default": 0.0,
+                            "description": "Maximum time in seconds to wait after triggering in SingleFrame modes until auto exposure has finished adjustments"
+                        },
+                        {
+                            "name": "quality",
+                            "type": "string",
+                            "value": "High",
+                            "min": "",
+                            "max": "",
+                            "default": "High",
+                            "description": "Quality: [Low, Medium, High, Full]. Full requires 'stereo_plus' license."
+                        },
+                        {
+                            "name": "double_shot",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Combination of disparity images from two subsequent stereo image pairs"
+                        },
+                        {
+                            "name": "static_scene",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Accumulation of images in static scenes to reduce noise"
+                        },
+                        {
+                            "name": "seg",
+                            "type": "int32",
+                            "value": 200,
+                            "min": 0,
+                            "max": 4000,
+                            "default": 200,
+                            "description": "Minimum size of valid disparity segments in pixels"
+                        },
+                        {
+                            "name": "smooth",
+                            "type": "bool",
+                            "value": true,
+                            "min": false,
+                            "max": true,
+                            "default": true,
+                            "description": "Smoothing of disparity image (requires 'stereo_plus' license)"
+                        },
+                        {
+                            "name": "fill",
+                            "type": "int32",
+                            "value": 3,
+                            "min": 0,
+                            "max": 4,
+                            "default": 3,
+                            "description": "Disparity tolerance for hole filling in pixels"
+                        },
+                        {
+                            "name": "minconf",
+                            "type": "float64",
+                            "value": 0.5,
+                            "min": 0.5,
+                            "max": 1.0,
+                            "default": 0.5,
+                            "description": "Minimum confidence"
+                        },
+                        {
+                            "name": "mindepth",
+                            "type": "float64",
+                            "value": 0.1,
+                            "min": 0.1,
+                            "max": 100.0,
+                            "default": 0.1,
+                            "description": "Minimum depth in meters"
+                        },
+                        {
+                            "name": "maxdepth",
+                            "type": "float64",
+                            "value": 2.6,
+                            "min": 0.1,
+                            "max": 100.0,
+                            "default": 100.0,
+                            "description": "Maximum depth in meters"
+                        },
+                        {
+                            "name": "maxdeptherr",
+                            "type": "float64",
+                            "value": 1.65,
+                            "min": 0.01,
+                            "max": 100.0,
+                            "default": 100.0,
+                            "description": "Maximum depth error in meters"
+                        }
+                    ]
+                },
+                "rc_load_carrier": {
+                    "parameters": [
+                        {
+                            "name": "assume_gravity_aligned",
+                            "type": "bool",
+                            "value": true,
+                            "min": false,
+                            "max": true,
+                            "default": true,
+                            "description": "When true, only gravity-aligned load carriers are detected, if gravity measurement is available."
+                        },
+                        {
+                            "name": "crop_distance",
+                            "type": "float64",
+                            "value": 0.005,
+                            "min": 0.0,
+                            "max": 0.05,
+                            "default": 0.005,
+                            "description": "Safety margin in meters by which the load carrier inner dimensions are reduced to define the region of interest for detection"
+                        },
+                        {
+                            "name": "min_plausibility",
+                            "type": "float64",
+                            "value": 0.8,
+                            "min": 0.0,
+                            "max": 0.99,
+                            "default": 0.8,
+                            "description": "Indicates how much of the plane surrounding the load carrier rim must be free to count as valid detection"
+                        },
+                        {
+                            "name": "model_tolerance",
+                            "type": "float64",
+                            "value": 0.015,
+                            "min": 0.003,
+                            "max": 0.025,
+                            "default": 0.008,
+                            "description": "Indicates how much the estimated load carrier dimensions are allowed to differ from the load carrier model dimensions in meters"
+                        }
+                    ]
+                },
+                "rc_april_tag_detect": {
+                    "parameters": [
+                        {
+                            "name": "detect_inverted_tags",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Detect tags with black and white exchanged"
+                        },
+                        {
+                            "name": "use_cached_images",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Use most recently received image pair instead of waiting for a new pair"
+                        },
+                        {
+                            "name": "forget_after_n_detections",
+                            "type": "int32",
+                            "value": 30,
+                            "min": 1,
+                            "max": 1000,
+                            "default": 30,
+                            "description": "Number of detection runs after which to forget about a previous tag during tag re-identification"
+                        },
+                        {
+                            "name": "max_corner_distance",
+                            "type": "float64",
+                            "value": 0.005,
+                            "min": 0.001,
+                            "max": 0.01,
+                            "default": 0.005,
+                            "description": "Maximum distance of corresponding tag corners in meters during tag re-identification"
+                        },
+                        {
+                            "name": "quality",
+                            "type": "string",
+                            "value": "High",
+                            "min": "",
+                            "max": "",
+                            "default": "High",
+                            "description": "Quality of tag detection: [Low, Medium, High]"
+                        }
+                    ]
+                },
+                "rc_qr_code_detect": {
+                    "parameters": [
+                        {
+                            "name": "detect_inverted_tags",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Detect tags with black and white exchanged"
+                        },
+                        {
+                            "name": "use_cached_images",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Use most recently received image pair instead of waiting for a new pair"
+                        },
+                        {
+                            "name": "forget_after_n_detections",
+                            "type": "int32",
+                            "value": 30,
+                            "min": 1,
+                            "max": 1000,
+                            "default": 30,
+                            "description": "Number of detection runs after which to forget about a previous tag during tag re-identification"
+                        },
+                        {
+                            "name": "max_corner_distance",
+                            "type": "float64",
+                            "value": 0.005,
+                            "min": 0.001,
+                            "max": 0.01,
+                            "default": 0.005,
+                            "description": "Maximum distance of corresponding tag corners in meters during tag re-identification"
+                        },
+                        {
+                            "name": "quality",
+                            "type": "string",
+                            "value": "High",
+                            "min": "",
+                            "max": "",
+                            "default": "High",
+                            "description": "Quality of tag detection: [Low, Medium, High]"
+                        }
+                    ]
+                },
+                "rc_camera_tl": {
+                    "parameters": [
+                        {
+                            "name": "device",
+                            "type": "string",
+                            "value": "",
+                            "min": "",
+                            "max": "",
+                            "default": "*",
+                            "description": "ID of GenICam device"
+                        }
+                    ]
+                },
+                "rc_iocontrol": {
+                    "parameters": [
+                        {
+                            "name": "out1_mode",
+                            "type": "string",
+                            "value": "Low",
+                            "min": "",
+                            "max": "",
+                            "default": "Low",
+                            "description": "Out1 mode: [Low, High, ExposureActive, ExposureAlternateActive]"
+                        },
+                        {
+                            "name": "out2_mode",
+                            "type": "string",
+                            "value": "Low",
+                            "min": "",
+                            "max": "",
+                            "default": "Low",
+                            "description": "Out2 mode: [Low, High, ExposureActive, ExposureAlternateActive]"
+                        }
+                    ]
+                },
+                "rc_boxpick": {
+                    "parameters": [
+                        {
+                            "name": "allow_any_grasp_z_rotation",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Whether the grasps are allowed to have arbitrary rotation instead being aligned with the major axis of the graspable ellipse"
+                        },
+                        {
+                            "name": "allow_untextured_detections",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Whether to return also untextured detections in case a textured box was given"
+                        },
+                        {
+                            "name": "manual_line_sensitivity",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Indicates whether the user-defined line sensitivity should be used or the automatic one"
+                        },
+                        {
+                            "name": "prefer_splits",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Indicates whether rectangles are split into smaller ones when possible"
+                        },
+                        {
+                            "name": "max_grasps",
+                            "type": "int32",
+                            "value": 5,
+                            "min": 1,
+                            "max": 20,
+                            "default": 5,
+                            "description": "Maximum number of provided grasps"
+                        },
+                        {
+                            "name": "cluster_max_curvature",
+                            "type": "float64",
+                            "value": 0.11,
+                            "min": 0.005,
+                            "max": 0.5,
+                            "default": 0.11,
+                            "description": "Maximum curvature allowed within one cluster. The smaller this value, the more clusters will be split apart."
+                        },
+                        {
+                            "name": "clustering_discontinuity_factor",
+                            "type": "float64",
+                            "value": 1.0,
+                            "min": 0.1,
+                            "max": 5.0,
+                            "default": 1.0,
+                            "description": "Factor used to discriminate depth discontinuities within a patch. The smaller this value, the more clusters will be split apart."
+                        },
+                        {
+                            "name": "clustering_max_surface_rmse",
+                            "type": "float64",
+                            "value": 0.004,
+                            "min": 0.0005,
+                            "max": 0.01,
+                            "default": 0.004,
+                            "description": "Maximum root-mean-square error (RMSE) in meters of points belonging to a surface"
+                        },
+                        {
+                            "name": "grasp_filter_orientation_threshold",
+                            "type": "float64",
+                            "value": 45.0,
+                            "min": 0.0,
+                            "max": 180.0,
+                            "default": 45.0,
+                            "description": "Maximum allowed orientation change between grasp and preferred orientation in degrees"
+                        },
+                        {
+                            "name": "line_sensitivity",
+                            "type": "float64",
+                            "value": 0.1,
+                            "min": 0.1,
+                            "max": 1.0,
+                            "default": 0.1,
+                            "description": "Sensitivity of the line detector"
+                        },
+                        {
+                            "name": "min_cluster_coverage",
+                            "type": "float64",
+                            "value": 0.0,
+                            "min": 0.0,
+                            "max": 0.99,
+                            "default": 0.0,
+                            "description": "Gives the minimal ratio of points per cluster that must be covered with detected items."
+                        },
+                        {
+                            "name": "mode",
+                            "type": "string",
+                            "value": "Unconstrained",
+                            "min": "",
+                            "max": "",
+                            "default": "Unconstrained",
+                            "description": "Mode of the rectangle detection: [Unconstrained, PackedGridLayout, PackedLayers]"
+                        }
+                    ],
+                    "preferred_orientation": {
+                        "pose_frame": "camera",
+                        "orientation": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0,
+                            "w": 1.0
+                        }
+                    },
+                    "sorting_strategies": {
+                        "gravity": {
+                            "weight": 0.0
+                        },
+                        "surface_area": {
+                            "weight": 0.0
+                        },
+                        "direction": {
+                            "weight": 0.0,
+                            "vector": {
+                                "x": 0.0,
+                                "y": 0.0,
+                                "z": 0.0
+                            },
+                            "pose_frame": ""
+                        },
+                        "distance_to_point": {
+                            "weight": 0.0,
+                            "point": {
+                                "x": 0.0,
+                                "y": 0.0,
+                                "z": 0.0
+                            },
+                            "pose_frame": "",
+                            "farthest_first": false
+                        }
+                    }
+                },
+                "rc_itempick": {
+                    "parameters": [
+                        {
+                            "name": "allow_any_grasp_z_rotation",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Whether the grasps are allowed to have arbitrary rotation instead being aligned with the major axis of the graspable ellipse"
+                        },
+                        {
+                            "name": "clustering_patch_size",
+                            "type": "int32",
+                            "value": 4,
+                            "min": 3,
+                            "max": 10,
+                            "default": 4,
+                            "description": "Size in pixels of the square patches the depth map is subdivided into during the first clustering step"
+                        },
+                        {
+                            "name": "max_grasps",
+                            "type": "int32",
+                            "value": 5,
+                            "min": 1,
+                            "max": 20,
+                            "default": 5,
+                            "description": "Maximum number of provided grasps"
+                        },
+                        {
+                            "name": "cluster_max_curvature",
+                            "type": "float64",
+                            "value": 0.11,
+                            "min": 0.005,
+                            "max": 0.5,
+                            "default": 0.11,
+                            "description": "Maximum curvature allowed within one cluster. The smaller this value, the more clusters will be split apart."
+                        },
+                        {
+                            "name": "cluster_max_dimension",
+                            "type": "float64",
+                            "value": 0.3,
+                            "min": 0.05,
+                            "max": 2.0,
+                            "default": 0.3,
+                            "description": "Maximum allowed diameter for a cluster in meters. Clusters with a diameter larger than this value are not used for grasp computation."
+                        },
+                        {
+                            "name": "clustering_discontinuity_factor",
+                            "type": "float64",
+                            "value": 1.0,
+                            "min": 0.1,
+                            "max": 5.0,
+                            "default": 1.0,
+                            "description": "Factor used to discriminate depth discontinuities within a patch. The smaller this value, the more clusters will be split apart."
+                        },
+                        {
+                            "name": "clustering_max_surface_rmse",
+                            "type": "float64",
+                            "value": 0.004,
+                            "min": 0.0005,
+                            "max": 0.01,
+                            "default": 0.004,
+                            "description": "Maximum root-mean-square error (RMSE) in meters of points belonging to a surface"
+                        },
+                        {
+                            "name": "grasp_filter_orientation_threshold",
+                            "type": "float64",
+                            "value": 45.0,
+                            "min": 0.0,
+                            "max": 180.0,
+                            "default": 45.0,
+                            "description": "Maximum allowed orientation change between grasp and preferred orientation in degrees"
+                        }
+                    ],
+                    "preferred_orientation": {
+                        "pose_frame": "camera",
+                        "orientation": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0,
+                            "w": 1.0
+                        }
+                    },
+                    "sorting_strategies": {
+                        "gravity": {
+                            "weight": 0.0
+                        },
+                        "surface_area": {
+                            "weight": 0.0
+                        },
+                        "direction": {
+                            "weight": 0.0,
+                            "vector": {
+                                "x": 0.0,
+                                "y": 0.0,
+                                "z": 0.0
+                            },
+                            "pose_frame": ""
+                        },
+                        "distance_to_point": {
+                            "weight": 0.0,
+                            "point": {
+                                "x": 0.0,
+                                "y": 0.0,
+                                "z": 0.0
+                            },
+                            "pose_frame": "",
+                            "farthest_first": false
+                        }
+                    }
+                },
+                "rc_cadmatch": {
+                    "parameters": [
+                        {
+                            "name": "check_collisions",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Whether to check for collisions when a gripper is defined for a grasp"
+                        },
+                        {
+                            "name": "check_collisions_during_retraction",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Whether to check for collisions between the object in the gripper and the load carrier during retraction"
+                        },
+                        {
+                            "name": "check_collisions_with_matches",
+                            "type": "bool",
+                            "value": true,
+                            "min": false,
+                            "max": true,
+                            "default": true,
+                            "description": "Whether to check for collisions between gripper and detected matches"
+                        },
+                        {
+                            "name": "check_collisions_with_point_cloud",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Whether to check for collisions between gripper and point cloud"
+                        },
+                        {
+                            "name": "only_highest_priority_grasps",
+                            "type": "bool",
+                            "value": false,
+                            "min": false,
+                            "max": true,
+                            "default": false,
+                            "description": "Whether to return only the highest priority level grasps"
+                        },
+                        {
+                            "name": "max_matches",
+                            "type": "int32",
+                            "value": 10,
+                            "min": 1,
+                            "max": 30,
+                            "default": 10,
+                            "description": "Maximum number of matches"
+                        },
+                        {
+                            "name": "edge_max_distance",
+                            "type": "float64",
+                            "value": 2.0,
+                            "min": 0.5,
+                            "max": 5.0,
+                            "default": 2.0,
+                            "description": "Maximum allowed distance in pixels between the template edges and the detected edges in the image"
+                        },
+                        {
+                            "name": "edge_sensitivity",
+                            "type": "float64",
+                            "value": 0.5,
+                            "min": 0.05,
+                            "max": 1.0,
+                            "default": 0.5,
+                            "description": "Sensitivity of the edge detector"
+                        },
+                        {
+                            "name": "grasp_filter_orientation_threshold",
+                            "type": "float64",
+                            "value": 45.0,
+                            "min": 0.0,
+                            "max": 180.0,
+                            "default": 45.0,
+                            "description": "Maximum allowed orientation change between grasp and preferred orientation in degrees"
+                        },
+                        {
+                            "name": "min_score",
+                            "type": "float64",
+                            "value": 0.3,
+                            "min": 0.05,
+                            "max": 1.0,
+                            "default": 0.3,
+                            "description": "Minimum score for matches"
+                        }
+                    ],
+                    "preferred_orientation": {
+                        "pose_frame": "camera",
+                        "orientation": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0,
+                            "w": 1.0
+                        }
+                    },
+                    "sorting_strategies": {
+                        "gravity": {
+                            "weight": 0.0
+                        },
+                        "match_score": {
+                            "weight": 0.0
+                        },
+                        "preferred_orientation": {
+                            "weight": 0.0
+                        },
+                        "direction": {
+                            "weight": 0.0,
+                            "vector": {
+                                "x": 0.0,
+                                "y": 0.0,
+                                "z": 0.0
+                            },
+                            "pose_frame": ""
+                        },
+                        "distance_to_point": {
+                            "weight": 0.0,
+                            "point": {
+                                "x": 0.0,
+                                "y": 0.0,
+                                "z": 0.0
+                            },
+                            "pose_frame": "",
+                            "farthest_first": false
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "load_carriers": [
+        {
+            "id": "k4l-sample-loadcarrier",
+            "type": "STANDARD",
+            "outer_dimensions": {
+                "x": 0.15,
+                "y": 0.5,
+                "z": 0.76
+            },
+            "inner_dimensions": {
+                "x": 0.1495,
+                "y": 0.495,
+                "z": 0.755
+            },
+            "rim_thickness": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "rim_step_height": 0.0,
+            "rim_ledge": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "height_open_side": 0.0,
+            "pose_frame": "",
+            "pose": {
+                "position": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "orientation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 0.0
+                }
+            },
+            "pose_type": "NO_POSE"
+        },
+        {
+            "id": "k4l-sim-loadcarrier",
+            "type": "THREE_SIDED",
+            "outer_dimensions": {
+                "x": 0.101,
+                "y": 0.16,
+                "z": 0.075
+            },
+            "inner_dimensions": {
+                "x": 0.09,
+                "y": 0.14,
+                "z": 0.07
+            },
+            "rim_thickness": {
+                "x": 0.01,
+                "y": 0.01
+            },
+            "rim_step_height": 0.008,
+            "rim_ledge": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "height_open_side": 0.04,
+            "pose_frame": "",
+            "pose": {
+                "position": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "orientation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 0.0
+                }
+            },
+            "pose_type": "NO_POSE"
+        },
+        {
+            "id": "k4l-sim-loadcarrier_lau",
+            "type": "THREE_SIDED",
+            "outer_dimensions": {
+                "x": 0.1016,
+                "y": 0.156,
+                "z": 0.075
+            },
+            "inner_dimensions": {
+                "x": 0.1006,
+                "y": 0.155,
+                "z": 0.074
+            },
+            "rim_thickness": {
+                "x": 0.0025,
+                "y": 0.0025
+            },
+            "rim_step_height": 0.001,
+            "rim_ledge": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "height_open_side": 0.05,
+            "pose_frame": "",
+            "pose": {
+                "position": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "orientation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 0.0
+                }
+            },
+            "pose_type": "NO_POSE"
+        },
+        {
+            "id": "k4l-sim-loadcarrier_v3",
+            "type": "THREE_SIDED",
+            "outer_dimensions": {
+                "x": 0.1016,
+                "y": 0.156,
+                "z": 0.075
+            },
+            "inner_dimensions": {
+                "x": 0.09,
+                "y": 0.13,
+                "z": 0.07
+            },
+            "rim_thickness": {
+                "x": 0.004,
+                "y": 0.004
+            },
+            "rim_step_height": 0.001,
+            "rim_ledge": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "height_open_side": 0.045,
+            "pose_frame": "",
+            "pose": {
+                "position": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "orientation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 0.0
+                }
+            },
+            "pose_type": "NO_POSE"
+        },
+        {
+            "id": "loadcarrier-dimensions-from-data-json",
+            "type": "STANDARD",
+            "outer_dimensions": {
+                "x": 0.53,
+                "y": 0.35,
+                "z": 0.16
+            },
+            "inner_dimensions": {
+                "x": 0.525,
+                "y": 0.345,
+                "z": 0.155
+            },
+            "rim_thickness": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "rim_step_height": 0.0,
+            "rim_ledge": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "height_open_side": 0.0,
+            "pose_frame": "",
+            "pose": {
+                "position": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "orientation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 0.0
+                }
+            },
+            "pose_type": "NO_POSE"
+        },
+        {
+            "id": "loadcarrier-wrong-dimensions",
+            "type": "STANDARD",
+            "outer_dimensions": {
+                "x": 0.53,
+                "y": 0.16,
+                "z": 0.35
+            },
+            "inner_dimensions": {
+                "x": 0.52,
+                "y": 0.15,
+                "z": 0.34
+            },
+            "rim_thickness": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "rim_step_height": 0.0,
+            "rim_ledge": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "height_open_side": 0.0,
+            "pose_frame": "",
+            "pose": {
+                "position": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "orientation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 0.0
+                }
+            },
+            "pose_type": "NO_POSE"
+        }
+    ],
+    "regions_of_interest": {
+        "rois_3d": [
+            {
+                "id": "blue",
+                "type": "BOX",
+                "pose_frame": "camera",
+                "pose": {
+                    "position": {
+                        "x": -0.26,
+                        "y": 0.34,
+                        "z": 1.26
+                    },
+                    "orientation": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 1.0
+                    }
+                },
+                "box": {
+                    "x": 0.15,
+                    "y": 0.2,
+                    "z": 0.2
+                },
+                "sphere": {
+                    "radius": 0.0
+                }
+            },
+            {
+                "id": "red",
+                "type": "BOX",
+                "pose_frame": "camera",
+                "pose": {
+                    "position": {
+                        "x": -0.12,
+                        "y": 0.16,
+                        "z": 1.35
+                    },
+                    "orientation": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 1.0
+                    }
+                },
+                "box": {
+                    "x": 0.15,
+                    "y": 0.2,
+                    "z": 0.2
+                },
+                "sphere": {
+                    "radius": 0.0
+                }
+            },
+            {
+                "id": "whole_table_h30",
+                "type": "BOX",
+                "pose_frame": "camera",
+                "pose": {
+                    "position": {
+                        "x": 0.08,
+                        "y": -0.05,
+                        "z": 1.06
+                    },
+                    "orientation": {
+                        "x": -0.05233595624294383,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 0.9986295347545738
+                    }
+                },
+                "box": {
+                    "x": 1.1,
+                    "y": 0.8,
+                    "z": 0.3
+                },
+                "sphere": {
+                    "radius": 0.0
+                }
+            }
+        ],
+        "rois_2d": [
+            {
+                "id": "isaac_backend",
+                "offset_x": 750,
+                "offset_y": 490,
+                "width": 166,
+                "height": 211
+            },
+            {
+                "id": "test_bb0",
+                "offset_x": 974,
+                "offset_y": 489,
+                "width": 176,
+                "height": 212
+            },
+            {
+                "id": "tst544",
+                "offset_x": 496,
+                "offset_y": 488,
+                "width": 87,
+                "height": 132
+            }
+        ]
+    },
+    "grippers": {
+        "generic": []
+    }
+}

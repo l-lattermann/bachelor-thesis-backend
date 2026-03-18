@@ -4,7 +4,7 @@ import numpy as np
 
 
 
-def save_imgs(img_batch, path):
+def save_imgs(img_batch, path, img_no):
     os.makedirs(path, exist_ok=True)
 
     for set_name, img_set in img_batch.items():
@@ -12,9 +12,11 @@ def save_imgs(img_batch, path):
             if img.ndim == 3 and img.shape[2] == 3:
                 img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             print("SET NAME = ", set_name)
-            out_path = os.path.join(path, f"{set_name}_{i}.png")
-            print("Writing:", out_path)
-            cv2.imwrite(out_path, img)
+            if i in img_no:
+                out_path = os.path.join(path, f"{set_name}_{i}.png")
+                print("Writing:", out_path)
+
+                cv2.imwrite(out_path, img)
 
 def depth_to_xyz(depth, K, depth_scale=1.0):
     """
