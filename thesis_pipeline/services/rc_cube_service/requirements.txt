@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+grpcio>=1.76.0
+protobuf>=6.31.1
+pillow
+numpy==1.26.4
+opencv-python-headless
+plyfile
+pyyaml

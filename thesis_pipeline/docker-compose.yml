@@ -1,0 +1,65 @@
+services:
+  rc_cube:
+    build: ./services/rc_cube_service
+    ports:
+      - "8003:8000"
+    volumes:
+      - ./services/rc_cube_service:/app
+      - ./shared/input:/shared/input
+      - ./shared/output:/shared/output
+      - ./shared/pipeline_utils:/app/pipeline_utils:ro
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  uois:
+    build: ./services/uois_service
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./services/uois_service:/app
+      - ./shared/input:/shared/input
+      - ./shared/output:/shared/output
+      - ./shared/pipeline_utils:/app/pipeline_utils:ro
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - PYTHONUNBUFFERED=1
+    gpus: all
+    restart: unless-stopped
+
+  contactgraspnet:
+    build: ./services/contactgraspnet_service
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./services/contactgraspnet_service:/app
+      - ./shared/input:/shared/input
+      - ./shared/output:/shared/output
+      - ./shared/pipeline_utils:/app/pipeline_utils:ro
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app:/app/contact_graspnet:/app/contact_graspnet/contact_graspnet
+    gpus: all
+    restart: unless-stopped
+
+  orchestrator:
+    build: ./orchestrator
+    ports:
+      - "8000:8000"
+    depends_on:
+      - rc_cube
+      - uois
+      - contactgraspnet
+    volumes:
+      - ./orchestrator:/app
+      - ./shared/input:/shared/input
+      - ./shared/output:/shared/output
+      - ./shared/pipeline_utils:/app/pipeline_utils:ro
+      - ./config.yaml:/app/config.yaml:ro
+    restart: unless-stopped
