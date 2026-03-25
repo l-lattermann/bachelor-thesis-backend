@@ -13,9 +13,16 @@ sys.path.append(os.path.join(BASE_DIR))
 sys.path.append(os.path.join(BASE_DIR, 'pointnet2',  'utils'))
 sys.path.append(os.path.abspath(__file__))
 
-from tf_train_ops import get_bn_decay
-import config_utils
-from data import farthest_points, distance_by_translation_point, preprocess_pc_for_inference, regularize_pc_point_count, depth2pc, reject_median_outliers
+from .tf_train_ops import get_bn_decay
+from . import config_utils
+from .data import (
+    farthest_points,
+    distance_by_translation_point,
+    preprocess_pc_for_inference,
+    regularize_pc_point_count,
+    depth2pc,
+    reject_median_outliers,
+)
 
 class GraspEstimator:
     """

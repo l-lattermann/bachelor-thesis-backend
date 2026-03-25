@@ -1,23 +1,29 @@
 from pathlib import Path
+import os
+import yaml
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import yaml
 
-from service_core import run_uois_on_npy, load_model, save_results
+from service_core import run_uois_on_npz, load_model
+import data_io as io_utils  
 
 app = FastAPI()
 
 CONFIG_PATH = "/app/config.yaml"
+cfg = None
 
-
-def load_config():
+def load_config() -> dict:
+    """Load service configuration from YAML file."""
     with open(CONFIG_PATH, "r") as f:
         return yaml.safe_load(f)
 
 
 @app.on_event("startup")
 def startup_event():
+    """Load config and model on service startup."""
+    global cfg
+    cfg = load_config()
     load_model()
     print("============================")
     print("===     UOIS SERVICE      ==")
@@ -25,44 +31,49 @@ def startup_event():
 
 
 class UOISRequest(BaseModel):
-    npy_path: str
+    """Request body for UOIS prediction."""
+    npz_path: str
     stem: str = "uois"
 
 
 @app.get("/health")
-def health():
+def health() -> dict:
     return {"status": "ok", "service": "uois"}
 
 
 @app.post("/predict")
-def predict(req: UOISRequest):
-    try:
-        if not Path(req.npy_path).exists():
-            raise FileNotFoundError(f"Input file not found: {req.npy_path}")
+def predict(req: UOISRequest) -> dict:
+    global cfg
 
-        run_result = run_uois_on_npy(req.npy_path)
-        paths = save_results(run_result, stem=req.stem)
+    try:
+        npz_path = Path(req.npz_path)
+        if not npz_path.exists():
+            raise FileNotFoundError(f"Input file not found: {req.npz_path}")
+
+        run_result = run_uois_on_npz(str(npz_path))
+
+        if cfg.get("project", {}).get("debug", False):
+            io_utils.uois_debug_save(run_result)
+
+        paths = io_utils.uois_save_cgn_format(
+            rgb=run_result["rgb"],
+            xyz=run_result["xyz"],
+            seg=run_result["seg"]
+        )
 
         response = {
             "status": "ok",
-            "mask_path": paths["mask_npy"],
             "mask_shape": list(run_result["seg"].shape),
-            "time": run_result["time"],
-            "cgn_npy_path": paths["cgn_npy"],
-            "dsn_config": run_result["dsn_config"]
+            "time": run_result.get("time"),
+            "cgn_npz": paths.get("cgn_npz"),
+            "dsn_config": run_result.get("dsn_config"),
         }
-        
-        if "vis_dir" in paths:
-            response["vis_dir"] = paths["vis_dir"]
-
-        if "metrics" in paths:
-            response["metrics"] = paths["metrics"]
 
         return response
 
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except KeyError as e:
-        raise HTTPException(status_code=400, detail=f"Missing key in input npy: {e}")
+        raise HTTPException(status_code=400, detail=f"Missing key in input npz: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

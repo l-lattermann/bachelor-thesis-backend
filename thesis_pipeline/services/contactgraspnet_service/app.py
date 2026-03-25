@@ -1,17 +1,34 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
+from pydantic import BaseModel
+from pathlib import Path
 import numpy as np
 import io
-import tempfile
+import yaml
 
-from service_core import run_contact_graspnet, load_model
+import service_core as cs
+
 
 app = FastAPI()
+
+CONFIG_PATH = "/app/config.yaml"
+cfg = None
+
+
+def load_config() -> dict:
+    with open(CONFIG_PATH, "r") as f:
+        return yaml.safe_load(f)
+
+
+class InferenceRequest(BaseModel):
+    npz_path: str
 
 
 @app.on_event("startup")
 def startup_event():
-    load_model()
+    global cfg
+    cfg = load_config()
+    cs.load_model()
     print("============================", flush=True)
     print("===     CGN SERVICE       ==", flush=True)
     print("============================", flush=True)
@@ -23,13 +40,24 @@ def health():
 
 
 @app.post("/inference")
-async def inference(request: Request):
+def inference(req: InferenceRequest):
     try:
-        raw = await request.body()
-        if not raw:
-            raise HTTPException(status_code=400, detail="Empty request body")
+        npz_path = Path(req.npz_path)
+        if not npz_path.exists():
+            raise HTTPException(status_code=404, detail=f"File not found: {npz_path}")
 
-        result = run_contact_graspnet_bytes(raw)
+        result = cs.run_contact_graspnet(str(npz_path))
+
+        # optional visualization output
+        image_paths = cs.save_cgn_output_image(
+            pc_full=result["pc_full"],
+            pred_grasps_cam=result["pred_grasps_cam"],
+            scores=result["scores"],
+            segmap=result.get("segmap"),
+            rgb=result.get("rgb"),
+            pc_colors=result.get("pc_colors"),
+            gripper_openings=result.get("gripper_openings"),
+        )
 
         buf = io.BytesIO()
         np.savez(
@@ -44,16 +72,13 @@ async def inference(request: Request):
         return Response(
             content=buf.getvalue(),
             media_type="application/octet-stream",
+            headers={
+                "X-CGN-Grasps-Image": image_paths["grasps_img"],
+                "X-CGN-Segmap-Image": image_paths["segmap_img"] or "",
+            },
         )
 
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-def run_contact_graspnet_bytes(raw: bytes):
-    with tempfile.NamedTemporaryFile(suffix=".npz") as tmp:
-        tmp.write(raw)
-        tmp.flush()
-        return run_contact_graspnet(tmp.name)

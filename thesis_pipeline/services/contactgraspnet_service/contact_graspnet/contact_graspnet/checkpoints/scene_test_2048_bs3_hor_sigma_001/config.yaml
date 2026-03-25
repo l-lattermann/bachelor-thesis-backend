@@ -1,5 +1,5 @@
 DATA:
-  gripper_width: 0.08
+  gripper_width: 0.12
   input_normals: false
   use_uniform_quaternions: False
   train_on_scenes: True
@@ -67,7 +67,7 @@ MODEL:
   joint_heads: false
   larger_model: false
   asymmetric_model: true
-  model: contact_graspnet
+  model: contact_graspnet.contact_graspnet.contact_graspnet
   pointnet_fp_modules:
   - mlp:
     - 256

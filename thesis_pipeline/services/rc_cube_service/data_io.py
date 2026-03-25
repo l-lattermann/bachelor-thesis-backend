@@ -131,17 +131,8 @@ def disparity_to_uois_dict(
         "label": label,
     }
 
-def save_uois_npy(uois_dict, out_path):
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    np.savez_compressed(
-        out_path,
-        rgb=uois_dict["rgb"],
-        xyz=uois_dict["xyz"],
-        label=uois_dict["label"],
-    )
-    return out_path
 
-def save_rc_cube_output(left_rgb, disp_arr, cam=None, disp_params=None, base_dir="/shared/input"):
+def save_rc_cube_output(left_rgb, disp_arr, cam=None, disp_params=None, base_dir="/shared/debug"):
     os.makedirs(base_dir, exist_ok=True)
 
     left_png = os.path.join(base_dir, "left.png")

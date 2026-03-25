@@ -9,14 +9,13 @@ network:
   contact_graspnet_service_url: http://contactgraspnet:8000
 
 paths:
-  input_dir: /shared/input
-  output_dir: /shared/output
+  output_debug: /shared/debug
+  pipeline_file_share: /shared/pipeline_io
 
 rc_cube:
   ip: 172.27.48.156:50051
   timeout_sec: 25.0
   max_message_size_mb: 300
-  debug_save_output: true
   
 
 uois:
@@ -58,11 +57,11 @@ contact_graspnet:
     filter_grasps: true
     local_regions: true
     forward_passes: 1
-    segmap_id: null
+    segmap_id: 2
 
   selection:
     max_farthest_points: 150
-    num_grasps: 200
+    num_grasps: 5
     first_thres: 0.25
     second_thres: 0.2
     with_replacement: false
