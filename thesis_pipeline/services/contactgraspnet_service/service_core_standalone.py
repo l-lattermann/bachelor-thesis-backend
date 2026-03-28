@@ -12,7 +12,10 @@ tf.disable_eager_execution()
 _MODEL = None
 _SESS = None
 
-CONFIG_PATH = Path("/app/config.yaml")
+SERVICE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SERVICE_DIR.parents[1]
+CONFIG_PATH = PROJECT_ROOT / "config.yaml"
+
 with CONFIG_PATH.open("r") as f:
     CFG = yaml.safe_load(f)
 
@@ -60,7 +63,14 @@ def load_model():
     if _MODEL is not None and _SESS is not None:
         return _MODEL, _SESS
 
-    ckpt_dir = CGN_CFG["checkpoint_dir"]
+    ckpt_dir_cfg = CGN_CFG["checkpoint_dir"]
+    ckpt_dir = Path(ckpt_dir_cfg)
+
+    if not ckpt_dir.is_absolute() or str(ckpt_dir).startswith("/app/"):
+        ckpt_dir = SERVICE_DIR / "contact_graspnet" / "contact_graspnet" / "checkpoints" / "scene_test_2048_bs3_hor_sigma_001"
+
+    ckpt_dir = str(ckpt_dir)
+    print("Using checkpoint dir:", ckpt_dir, flush=True)
 
     model_cfg = config_utils.load_config(
         ckpt_dir,
@@ -155,6 +165,26 @@ def run_contact_graspnet(npz_path: str):
         filter_grasps=use_filter_grasps,
         forward_passes=pred_cfg.get("forward_passes", 1),
     )
+    print("\n=== RAW CGN DEBUG ===")
+
+    for key in pred_grasps_cam:
+        openings_k = np.asarray(gripper_openings[key])
+        scores_k = np.asarray(scores[key])
+
+        print(f"\n[key={key}]")
+
+        if len(openings_k) > 0:
+            print("openings min/max:", openings_k.min(), openings_k.max())
+            print("openings first 10:", openings_k[:10])
+        else:
+            print("openings: empty")
+
+        if len(scores_k) > 0:
+            print("scores first 10:", scores_k[:10])
+        else:
+            print("scores: empty")
+
+    print("======================\n")
 
     return {
         "pred_grasps_cam": pred_grasps_cam,

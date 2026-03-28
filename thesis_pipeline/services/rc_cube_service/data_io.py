@@ -1,62 +1,8 @@
-import numpy as np
 import os
 import cv2
-from plyfile import PlyData, PlyElement
+import numpy as np
 import yaml
 
-
-def save_uois_dict_to_ply(uois_dict, ply_path, use_rgb=True, mask_valid=True):
-    xyz = uois_dict["xyz"].reshape(-1, 3)
-    rgb = uois_dict.get("rgb")
-
-    if rgb is not None:
-        rgb = rgb.reshape(-1, 3).astype(np.uint8)
-
-    if mask_valid:
-        valid = np.isfinite(xyz).all(axis=1) & (xyz[:, 2] > 0)
-        xyz = xyz[valid]
-        if rgb is not None:
-            rgb = rgb[valid]
-
-    out_dir = os.path.dirname(ply_path)
-    if out_dir:
-        os.makedirs(out_dir, exist_ok=True)
-
-    if use_rgb and rgb is not None:
-        verts = np.empty(
-            len(xyz),
-            dtype=[
-                ("x", "f4"),
-                ("y", "f4"),
-                ("z", "f4"),
-                ("red", "u1"),
-                ("green", "u1"),
-                ("blue", "u1"),
-            ],
-        )
-        verts["x"] = xyz[:, 0]
-        verts["y"] = xyz[:, 1]
-        verts["z"] = xyz[:, 2]
-        verts["red"] = rgb[:, 0]
-        verts["green"] = rgb[:, 1]
-        verts["blue"] = rgb[:, 2]
-    else:
-        verts = np.empty(
-            len(xyz),
-            dtype=[
-                ("x", "f4"),
-                ("y", "f4"),
-                ("z", "f4"),
-            ],
-        )
-        verts["x"] = xyz[:, 0]
-        verts["y"] = xyz[:, 1]
-        verts["z"] = xyz[:, 2]
-
-    ply = PlyData([PlyElement.describe(verts, "vertex")], text=False)
-    ply.write(ply_path)
-
-    return ply_path
 
 def disparity_to_uois_dict(
     disp_arr,
@@ -68,21 +14,26 @@ def disparity_to_uois_dict(
     seg_id=1,
     background_label=0,
 ):
-    # disparity resolution = target resolution
     H, W = disp_arr.shape[:2]
 
-    # original camera/image resolution
     H_cam = int(cam["height"])
     W_cam = int(cam["width"])
 
-    # scale intrinsics from left-image resolution down to disparity resolution
     sx = W / W_cam
     sy = H / H_cam
 
-    fx = float(cam["fx"]) * sx
-    fy = float(cam["fy"]) * sy
-    cx = float(cam["cx"]) * sx
-    cy = float(cam["cy"]) * sy
+    cam = cam.copy()
+    cam["fx"] *= sx
+    cam["fy"] *= sy
+    cam["cx"] *= sx
+    cam["cy"] *= sy
+    cam["width"] = W
+    cam["height"] = H
+
+    fx = float(cam["fx"])
+    fy = float(cam["fy"])
+    cx = float(cam["cx"])
+    cy = float(cam["cy"])
 
     scale = float(disp_params["scale"])
     offset = float(disp_params["offset"])
@@ -92,18 +43,15 @@ def disparity_to_uois_dict(
     if conf is not None and conf.shape != (H, W):
         conf = cv2.resize(conf, (W, H), interpolation=cv2.INTER_NEAREST)
 
-    # disparity
     d = disp_arr.astype(np.float32) * scale + offset
     valid = np.isfinite(d) & (d > 0) & (disp_arr != invalid)
 
     if conf is not None:
         valid = valid & (conf > conf_thr)
 
-    # depth
     z = np.zeros((H, W), dtype=np.float32)
     z[valid] = (fx * baseline) / d[valid]
 
-    # backprojection
     u = np.arange(W, dtype=np.float32)
     v = np.arange(H, dtype=np.float32)
     uu, vv = np.meshgrid(u, v)
@@ -115,13 +63,11 @@ def disparity_to_uois_dict(
 
     xyz = np.stack([x, y, z], axis=-1).astype(np.float32)
 
-    # only scale left image down to disparity size
     rgb_out = left_rgb
     if rgb_out.shape[:2] != (H, W):
         rgb_out = cv2.resize(rgb_out, (W, H), interpolation=cv2.INTER_NEAREST)
     rgb_out = rgb_out.astype(np.uint8)
 
-    # label
     label = np.full((H, W), background_label, dtype=np.int32)
     label[valid] = seg_id
 
@@ -129,51 +75,105 @@ def disparity_to_uois_dict(
         "rgb": rgb_out,
         "xyz": xyz,
         "label": label,
+        "fx": np.float32(fx),
+        "fy": np.float32(fy),
+        "cx": np.float32(cx),
+        "cy": np.float32(cy),
+        "width": np.int32(W),
+        "height": np.int32(H),
     }
 
 
-def save_rc_cube_output(left_rgb, disp_arr, cam=None, disp_params=None, base_dir="/shared/debug"):
-    os.makedirs(base_dir, exist_ok=True)
+def process_rc_cube_output(
+    left_rgb,
+    disp_arr,
+    cam,
+    disp_params,
+    out_dir="/shared/pipeline_io",
+    debug=False,
+    debug_base_dir="/shared/debug",
+):
+    os.makedirs(out_dir, exist_ok=True)
 
-    left_png = os.path.join(base_dir, "left.png")
-    disp_png = os.path.join(base_dir, "disparity.png")
-    cam_yaml = os.path.join(base_dir, "cam.yaml")
-    disp_yaml = os.path.join(base_dir, "disp_params.yaml")
+    uois_dict = disparity_to_uois_dict(
+        disp_arr=disp_arr,
+        left_rgb=left_rgb,
+        cam=cam,
+        disp_params=disp_params,
+        conf=None,
+        seg_id=1,
+        background_label=0,
+    )
 
-    cv2.imwrite(left_png, cv2.cvtColor(left_rgb, cv2.COLOR_RGB2BGR))
+    npz_path = os.path.join(out_dir, "rc_cube_output.npz")
+    np.savez_compressed(
+        npz_path,
+        rgb=uois_dict["rgb"],
+        xyz=uois_dict["xyz"],
+        label=uois_dict["label"],
+        fx=uois_dict["fx"],
+        fy=uois_dict["fy"],
+        cx=uois_dict["cx"],
+        cy=uois_dict["cy"],
+        width=uois_dict["width"],
+        height=uois_dict["height"],
+    )
 
-    disp_vis = disp_arr.astype(np.float32)
-    mask = disp_vis > 0
+    result = {
+        "status": "ok",
+        "rc_out_npz": npz_path,
+    }
 
-    if mask.any():
-        min_val = disp_vis[mask].min()
-        max_val = disp_vis[mask].max()
+    if debug:
+        os.makedirs(debug_base_dir, exist_ok=True)
 
-        if max_val > min_val:
-            disp_vis = (disp_vis - min_val) / (max_val - min_val) * 255.0
-        else:
-            disp_vis[:] = 0
+        left_png = os.path.join(debug_base_dir, "left.png")
+        disp_png = os.path.join(debug_base_dir, "disparity.png")
+        cam_yaml = os.path.join(debug_base_dir, "cam.yaml")
+        disp_yaml = os.path.join(debug_base_dir, "disp_params.yaml")
 
-    disp_vis = disp_vis.astype(np.uint8)
-    cv2.imwrite(disp_png, disp_vis)
+        cv2.imwrite(left_png, cv2.cvtColor(left_rgb, cv2.COLOR_RGB2BGR))
 
-    if cam is not None:
-        cam_struct = {
-            "camera_intrinsics": cam
+        disp_vis = disp_arr.astype(np.float32)
+        mask = disp_vis > 0
+        if mask.any():
+            min_val = disp_vis[mask].min()
+            max_val = disp_vis[mask].max()
+            if max_val > min_val:
+                disp_vis = (disp_vis - min_val) / (max_val - min_val) * 255.0
+            else:
+                disp_vis[:] = 0
+        disp_vis = disp_vis.astype(np.uint8)
+        cv2.imwrite(disp_png, disp_vis)
+
+        scaled_cam = {
+            "fx": float(uois_dict["fx"]),
+            "fy": float(uois_dict["fy"]),
+            "cx": float(uois_dict["cx"]),
+            "cy": float(uois_dict["cy"]),
+            "width": int(uois_dict["width"]),
+            "height": int(uois_dict["height"]),
         }
+
         with open(cam_yaml, "w") as f:
-            yaml.safe_dump(cam_struct, f, sort_keys=False)
+            yaml.safe_dump({"camera_intrinsics": scaled_cam}, f, sort_keys=False)
 
-    if disp_params is not None:
-        disp_struct = {
-            "disparity": disp_params
-        }
         with open(disp_yaml, "w") as f:
-            yaml.safe_dump(disp_struct, f, sort_keys=False)
+            yaml.safe_dump({"disparity": disp_params}, f, sort_keys=False)
 
-    return {
-        "left": left_png,
-        "disparity": disp_png,
-        "cam": cam_yaml if cam else None,
-        "disp_params": disp_yaml if disp_params else None,
-    }
+        result.update({
+            "left": left_png,
+            "disparity": disp_png,
+            "cam": cam_yaml,
+            "disp_params": disp_yaml,
+            "debug": {
+                "left_rgb_shape": list(left_rgb.shape),
+                "rgb_min": int(left_rgb.min()),
+                "rgb_max": int(left_rgb.max()),
+                "rgb_mean": float(left_rgb.mean()),
+                "disp_shape": list(disp_arr.shape),
+                "cam_hw": [int(uois_dict["height"]), int(uois_dict["width"])],
+            },
+        })
+
+    return result

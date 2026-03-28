@@ -1,37 +1,41 @@
+from io import BytesIO
+from pathlib import Path
+
+import numpy as np
+import yaml
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
-from pathlib import Path
-import numpy as np
-import io
-import yaml
 
 import service_core as cs
+from grasp_selection import process_contact_graspnet_result
+from projection_utils import save_projected_grasp_overlay
 
 
-app = FastAPI()
+app = FastAPI(title="Contact-GraspNet Service")
 
-CONFIG_PATH = "/app/config.yaml"
-cfg = None
-
-
-def load_config() -> dict:
-    with open(CONFIG_PATH, "r") as f:
-        return yaml.safe_load(f)
+CONFIG_PATH = Path("/app/config.yaml")
+CFG = None
 
 
 class InferenceRequest(BaseModel):
     npz_path: str
 
 
+def load_config() -> dict:
+    with CONFIG_PATH.open("r") as f:
+        return yaml.safe_load(f)
+
+
 @app.on_event("startup")
 def startup_event():
-    global cfg
-    cfg = load_config()
+    global CFG
+    CFG = load_config()
     cs.load_model()
-    print("============================", flush=True)
-    print("===     CGN SERVICE       ==", flush=True)
-    print("============================", flush=True)
+
+    print("============================")
+    print("===     CGN SERVICE       ==")
+    print("============================")
 
 
 @app.get("/health")
@@ -48,18 +52,56 @@ def inference(req: InferenceRequest):
 
         result = cs.run_contact_graspnet(str(npz_path))
 
-        # optional visualization output
-        image_paths = cs.save_cgn_output_image(
-            pc_full=result["pc_full"],
-            pred_grasps_cam=result["pred_grasps_cam"],
-            scores=result["scores"],
-            segmap=result.get("segmap"),
-            rgb=result.get("rgb"),
-            pc_colors=result.get("pc_colors"),
-            gripper_openings=result.get("gripper_openings"),
+        result = process_contact_graspnet_result(
+            result=result,
+            sel_cfg=CFG["contact_graspnet"]["selection"],
         )
 
-        buf = io.BytesIO()
+        # --- DEBUG PRINT ---
+        print("\n=== SELECTED GRASPS DEBUG ===", flush=True)
+
+        for key in result["pred_grasps_cam"]:
+            grasps_k = np.asarray(result["pred_grasps_cam"][key])
+            scores_k = np.atleast_1d(result["scores"][key])
+            contacts_k = np.atleast_2d(result["contact_pts"][key])
+            openings_k = np.atleast_1d(result["gripper_openings"][key])
+
+            if len(grasps_k) == 0:
+                print(f"[key={key}] no grasps", flush=True)
+                continue
+
+            for i in range(len(grasps_k)):
+                x, y, z = contacts_k[i]
+                score = scores_k[i]
+                opening = openings_k[i] if len(openings_k) > 0 else -1.0
+
+                print(
+                    f"[key={key}] grasp {i+1}: "
+                    f"score={score:.3f}, "
+                    f"opening={opening:.3f} m, "
+                    f"contact=({x:.3f}, {y:.3f}, {z:.3f})",
+                    flush=True,
+                )
+
+        print("================================\n", flush=True)
+
+        use_default_opening = CFG["contact_graspnet"]["gripper_projection"]["use_default_opening"]
+        default_opening = CFG["contact_graspnet"]["gripper_projection"]["default_opening"]
+        draw_confidence = CFG["contact_graspnet"]["gripper_projection"]["draw_confidence"]
+
+        overlay_path = save_projected_grasp_overlay(
+            rgb=result.get("rgb"),
+            K=result.get("K"),
+            pred_grasps_cam=result["pred_grasps_cam"],
+            scores=result["scores"],
+            gripper_openings=result["gripper_openings"],
+            draw_default_opening=use_default_opening,
+            default_opening=default_opening,
+            draw_confidence=draw_confidence,
+            output_path="/shared/pipeline_io/cgn_output.png",
+        )
+
+        buf = BytesIO()
         np.savez(
             buf,
             pred_grasps_cam=result["pred_grasps_cam"],
@@ -73,8 +115,7 @@ def inference(req: InferenceRequest):
             content=buf.getvalue(),
             media_type="application/octet-stream",
             headers={
-                "X-CGN-Grasps-Image": image_paths["grasps_img"],
-                "X-CGN-Segmap-Image": image_paths["segmap_img"] or "",
+                "X-CGN-Overlay": overlay_path or "",
             },
         )
 

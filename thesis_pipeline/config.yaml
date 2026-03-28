@@ -57,14 +57,20 @@ contact_graspnet:
     filter_grasps: true
     local_regions: true
     forward_passes: 1
-    segmap_id: 2
+    segmap_id: 5
 
   selection:
-    max_farthest_points: 150
-    num_grasps: 5
-    first_thres: 0.25
-    second_thres: 0.2
-    with_replacement: false
+    num_grasps: 4
+    confidence_threshold: 0.50
+    top_score_candidates: 40
+    min_contact_distance: 0.03
+    fallback_to_top_scores: true
+    gripper_width: 0.08
+  
+  gripper_projection:
+    use_default_opening: true
+    default_opening: 0.050
+    draw_confidence: false
 
   camera:
     fallback_fx: 525.0

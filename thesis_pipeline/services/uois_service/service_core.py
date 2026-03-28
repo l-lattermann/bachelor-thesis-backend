@@ -54,9 +54,6 @@ def load_model() -> segmentation.UOISNet3D:
 def run_uois_on_npz(npz_path: str) -> dict:
     """
     Run UOIS segmentation on a given .npz file.
-
-    Returns:
-        dict containing segmentation, masks, offsets, timing, and input data.
     """
     model = load_model()
     data, batch, rgb, xyz, label = load_uois_input(npz_path)
@@ -71,6 +68,7 @@ def run_uois_on_npz(npz_path: str) -> dict:
     initial = initial_masks.cpu().numpy()[0]
 
     return {
+        "data": data,
         "seg": seg,
         "fg_masks": fg,
         "center_offsets": center,

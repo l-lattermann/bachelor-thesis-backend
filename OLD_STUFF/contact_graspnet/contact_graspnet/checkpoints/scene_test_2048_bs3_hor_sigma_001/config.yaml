@@ -1,5 +1,5 @@
 DATA:
-  gripper_width: 0.08
+  gripper_width: 0.16
   input_normals: false
   use_uniform_quaternions: False
   train_on_scenes: True

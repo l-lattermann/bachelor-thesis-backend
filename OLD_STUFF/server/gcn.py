@@ -13,7 +13,11 @@ import numpy as np
 import time
 import glob
 import cv2
+import sys
+from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT))
 
 import tensorflow.compat.v1 as tf
 tf.disable_eager_execution()
@@ -150,12 +154,13 @@ def infer_from_cgn_npy_bytes(
     )  
 
     # Save results
+    os.makedirs("results", exist_ok=True)
     np.savez(
-        'results/predictions_.npz',
-        pred_grasps_cam=pred_grasps_cam, 
-        scores=scores, 
-        contact_pts=contact_pts
-        )
+        "results/predictions_.npz",
+        pred_grasps_cam=pred_grasps_cam,
+        scores=scores,
+        contact_pts=contact_pts,
+    )
 
 
     # Visualize results          
