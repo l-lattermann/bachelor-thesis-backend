@@ -61,8 +61,8 @@ contact_graspnet:
     segmap_id: 4
 
   selection:
-    num_grasps: 100
-    top_score_candidates: 100
+    num_grasps: 5
+    top_score_candidates: 20
     distance_div_filtering: false
     gripper_width: 0.08
 
