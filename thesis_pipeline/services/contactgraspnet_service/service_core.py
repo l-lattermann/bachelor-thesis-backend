@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import tensorflow.compat.v1 as tf
 import yaml
+from typing import Optional
 
 from contact_graspnet.contact_graspnet import config_utils
 from contact_graspnet.contact_graspnet.contact_grasp_estimator import GraspEstimator
@@ -120,15 +121,12 @@ def _load_npz_inputs(npz_path: str):
 
 
 
-def run_contact_graspnet(npz_path: str):
+def run_contact_graspnet(npz_path: str, object_id: Optional[int] = None):
     model, sess = load_model()
 
     pred_cfg = CGN_CFG["prediction"]
-    sel_cfg = CGN_CFG["selection"]
 
     rgb, depth, K, seg = _load_npz_inputs(npz_path)
-
-    segmap_id = pred_cfg.get("segmap_id", 0)
 
     pc_full, pc_segments, pc_colors = model.extract_point_clouds(
         depth=depth,
@@ -136,7 +134,7 @@ def run_contact_graspnet(npz_path: str):
         segmap=seg,
         rgb=rgb,
         z_range=[pred_cfg["z_min"], pred_cfg["z_max"]],
-        segmap_id=segmap_id,
+        segmap_id=object_id,
         skip_border_objects=pred_cfg.get("skip_border_objects", False),
         margin_px=pred_cfg.get("margin_px", 5),
     )

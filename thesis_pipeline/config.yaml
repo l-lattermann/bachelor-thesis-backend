@@ -7,6 +7,7 @@ network:
   rc_cube_service_url: http://rc_cube:8000
   uois_service_url: http://uois:8000
   contact_graspnet_service_url: http://contactgraspnet:8000
+  llm_service_url: http://llm:8000
 
 paths:
   output_debug: /shared/debug
@@ -25,12 +26,12 @@ uois:
   dsn_config:
     feature_dim: 64
     max_GMS_iters: 10
-    epsilon: 0.15
-    sigma: 0.04
     num_seeds: 400
+    epsilon: 0.10
+    sigma: 0.04
     subsample_factor: 5
-    min_pixels_thresh: 200
-    tau: 15.0
+    min_pixels_thresh: 500
+    tau: 15.0 
 
   rrn_config:
     feature_dim: 64
@@ -42,7 +43,7 @@ uois:
     padding_percentage: 0.25
     use_open_close_morphology: true
     open_close_morphology_ksize: 9
-    use_largest_connected_component: true
+    use_largest_connected_component: false
 
   checkpoints:
     dsn: DepthSeedingNetwork_3D_TOD_checkpoint.pth
@@ -57,16 +58,14 @@ contact_graspnet:
     filter_grasps: true
     local_regions: true
     forward_passes: 1
-    segmap_id: 5
+    segmap_id: 4
 
   selection:
-    num_grasps: 4
-    confidence_threshold: 0.50
-    top_score_candidates: 40
-    min_contact_distance: 0.03
-    fallback_to_top_scores: true
+    num_grasps: 100
+    top_score_candidates: 100
+    distance_div_filtering: false
     gripper_width: 0.08
-  
+
   gripper_projection:
     use_default_opening: true
     default_opening: 0.050
@@ -78,7 +77,12 @@ contact_graspnet:
     fallback_cx: null
     fallback_cy: null
 
+llm:
+  deployment: gpt-5.3-chat-global-standard
+  max_completion_tokens: 1000
+
 pipeline:
   use_rc_cube: true
   run_uois: true
   run_contact_graspnet: true
+  run_llm: true

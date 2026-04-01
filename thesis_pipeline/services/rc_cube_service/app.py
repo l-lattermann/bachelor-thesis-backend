@@ -21,9 +21,9 @@ def startup_event():
     global cfg
     cfg = load_config()
 
-    print("===============================", flush=True)
-    print("===     RC CUBE SERVICE      ==", flush=True)
-    print("===============================", flush=True)
+    print("===============================")
+    print("===     RC CUBE SERVICE      ==")
+    print("===============================")
 
 
 @app.get("/health")
@@ -66,7 +66,7 @@ def fetch_disparity_and_left():
             timeout=rc.get("timeout_sec"),
         )
 
-        result = io_utils.process_rc_cube_output(
+        rc_output = io_utils.process_rc_cube_output(
             left_rgb=left_rgb,
             disp_arr=disp_arr,
             cam=cam,
@@ -75,8 +75,11 @@ def fetch_disparity_and_left():
             debug=debug,
             debug_base_dir=debug_base_dir,   
         )
-
-        return result
+        return {
+            "status": "ok",
+            "result_path": rc_output["rc_out_npz"],
+            "debug": rc_output,
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

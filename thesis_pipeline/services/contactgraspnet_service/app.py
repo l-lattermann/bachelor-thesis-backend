@@ -1,4 +1,3 @@
-from io import BytesIO
 from pathlib import Path
 
 import numpy as np
@@ -6,6 +5,7 @@ import yaml
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
+from typing import Optional
 
 import service_core as cs
 from grasp_selection import process_contact_graspnet_result
@@ -20,6 +20,7 @@ CFG = None
 
 class InferenceRequest(BaseModel):
     npz_path: str
+    object_id: Optional[int] = None
 
 
 def load_config() -> dict:
@@ -43,6 +44,7 @@ def health():
     return {"status": "ok", "service": "contact_graspnet"}
 
 
+
 @app.post("/inference")
 def inference(req: InferenceRequest):
     try:
@@ -50,30 +52,37 @@ def inference(req: InferenceRequest):
         if not npz_path.exists():
             raise HTTPException(status_code=404, detail=f"File not found: {npz_path}")
 
-        result = cs.run_contact_graspnet(str(npz_path))
+        object_id = (
+            int(req.object_id)
+            if req.object_id is not None
+            else int(CFG["contact_graspnet"]["prediction"]["segmap_id"])
+        )
+
+        result = cs.run_contact_graspnet(
+            str(npz_path),
+            object_id=object_id,
+        )
 
         result = process_contact_graspnet_result(
             result=result,
             sel_cfg=CFG["contact_graspnet"]["selection"],
         )
 
-        # --- DEBUG PRINT ---
-        print("\n=== SELECTED GRASPS DEBUG ===", flush=True)
-
+        print("\n=== SELECTED GRASPS DEBUG ===")
         for key in result["pred_grasps_cam"]:
-            grasps_k = np.asarray(result["pred_grasps_cam"][key])
-            scores_k = np.atleast_1d(result["scores"][key])
-            contacts_k = np.atleast_2d(result["contact_pts"][key])
-            openings_k = np.atleast_1d(result["gripper_openings"][key])
+            grasps = np.asarray(result["pred_grasps_cam"][key])
+            scores = np.atleast_1d(result["scores"][key])
+            contacts = np.atleast_2d(result["contact_pts"][key])
+            openings = np.atleast_1d(result["gripper_openings"][key])
 
-            if len(grasps_k) == 0:
-                print(f"[key={key}] no grasps", flush=True)
+            if len(grasps) == 0:
+                print(f"[key={key}] no grasps")
                 continue
 
-            for i in range(len(grasps_k)):
-                x, y, z = contacts_k[i]
-                score = scores_k[i]
-                opening = openings_k[i] if len(openings_k) > 0 else -1.0
+            for i in range(len(grasps)):
+                x, y, z = contacts[i]
+                score = scores[i]
+                opening = openings[i] if len(openings) > 0 else -1.0
 
                 print(
                     f"[key={key}] grasp {i+1}: "
@@ -82,12 +91,9 @@ def inference(req: InferenceRequest):
                     f"contact=({x:.3f}, {y:.3f}, {z:.3f})",
                     flush=True,
                 )
+        print("================================\n")
 
-        print("================================\n", flush=True)
-
-        use_default_opening = CFG["contact_graspnet"]["gripper_projection"]["use_default_opening"]
-        default_opening = CFG["contact_graspnet"]["gripper_projection"]["default_opening"]
-        draw_confidence = CFG["contact_graspnet"]["gripper_projection"]["draw_confidence"]
+        projection_cfg = CFG["contact_graspnet"]["gripper_projection"]
 
         overlay_path = save_projected_grasp_overlay(
             rgb=result.get("rgb"),
@@ -95,29 +101,16 @@ def inference(req: InferenceRequest):
             pred_grasps_cam=result["pred_grasps_cam"],
             scores=result["scores"],
             gripper_openings=result["gripper_openings"],
-            draw_default_opening=use_default_opening,
-            default_opening=default_opening,
-            draw_confidence=draw_confidence,
-            output_path="/shared/pipeline_io/cgn_output.png",
+            draw_default_opening=projection_cfg["use_default_opening"],
+            default_opening=projection_cfg["default_opening"],
+            draw_confidence=projection_cfg["draw_confidence"],
+            output_path=str(Path(CFG["paths"]["pipeline_file_share"]) / "cgn_output.png"),
         )
 
-        buf = BytesIO()
-        np.savez(
-            buf,
-            pred_grasps_cam=result["pred_grasps_cam"],
-            scores=result["scores"],
-            contact_pts=result["contact_pts"],
-            gripper_openings=result["gripper_openings"],
-        )
-        buf.seek(0)
-
-        return Response(
-            content=buf.getvalue(),
-            media_type="application/octet-stream",
-            headers={
-                "X-CGN-Overlay": overlay_path or "",
-            },
-        )
+        return {
+            "result_path": overlay_path,
+            "num_grasps": sum(len(v) for v in result["pred_grasps_cam"].values()),
+        }
 
     except HTTPException:
         raise

@@ -27,6 +27,81 @@ def load_uois_input(npz_path: str):
     return data, batch, rgb, xyz, label
 
 
+def remap_segmentation_order(mask, row_tol: int = 40):
+    mask = mask.astype(np.int32).copy()
+    mask[mask < 0] = 0
+
+    segments = []
+
+    for seg_id in np.unique(mask):
+        if seg_id == 0:
+            continue
+
+        ys, xs = np.where(mask == seg_id)
+        if len(xs) == 0:
+            continue
+
+        cx = float(np.mean(xs))
+        cy = float(np.mean(ys))
+        row_key = int(round(cy / row_tol))
+
+        segments.append({
+            "seg_id": int(seg_id),
+            "cx": cx,
+            "cy": cy,
+            "row_key": row_key,
+        })
+
+    segments.sort(key=lambda s: (-s["row_key"], s["cx"]))
+
+    id_map = {seg["seg_id"]: i + 1 for i, seg in enumerate(segments)}
+
+    new_mask = mask.copy()
+    for old_id, new_id in id_map.items():
+        new_mask[mask == old_id] = new_id
+
+    return new_mask, id_map
+
+
+def draw_segment_ids(img, mask):
+    out = img.copy()
+
+    for seg_id in np.unique(mask):
+        if seg_id == 0:
+            continue
+
+        ys, xs = np.where(mask == seg_id)
+        if len(xs) == 0:
+            continue
+
+        cx = int(np.mean(xs))
+        cy = int(np.mean(ys))
+        text = str(int(seg_id))
+
+        cv2.putText(
+            out,
+            text,
+            (cx, cy),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 0, 0),
+            3,
+            lineType=cv2.LINE_AA,
+        )
+        cv2.putText(
+            out,
+            text,
+            (cx, cy),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (255, 255, 255),
+            1,
+            lineType=cv2.LINE_AA,
+        )
+
+    return out
+
+
 def uois_debug_save(run_result: dict):
     debug_out_dir = Path(CFG.get("paths", {}).get("output_debug", "/shared/debug")) / "uois"
     debug_out_dir.mkdir(parents=True, exist_ok=True)
@@ -36,21 +111,31 @@ def uois_debug_save(run_result: dict):
     label = run_result["label"]
     batch = run_result["batch"]
 
-    if label is None:
-        return
+    seg, _ = remap_segmentation_order(seg)
 
-    num_objs = int(max(seg.max(), label.max()) + 1)
+    if label is not None:
+        label, _ = remap_segmentation_order(label)
+
+    num_objs = int(seg.max() + 1) if label is None else int(max(seg.max(), label.max()) + 1)
     pred_vis = util_.get_color_mask(seg, nc=num_objs)
-    gt_vis = util_.get_color_mask(label, nc=num_objs)
+    gt_vis = util_.get_color_mask(label, nc=num_objs) if label is not None else None
     rgb = util_.torch_to_numpy(batch["rgb"].cpu(), is_standardized_image=True)[0].astype(np.uint8)
+
+    rgb = draw_segment_ids(rgb, seg)
+    pred_vis = draw_segment_ids(pred_vis, seg)
+
+    if gt_vis is not None:
+        gt_vis = draw_segment_ids(gt_vis, label)
 
     img_no = CFG.get("uois", {}).get("img_numbers_to_save", [0, 1, 2, 3, 4])
     debug_imgs = [
         rgb,
         xyz[..., 2].astype(np.float32),
         pred_vis,
-        gt_vis,
     ]
+
+    if gt_vis is not None:
+        debug_imgs.append(gt_vis)
 
     for i, img in enumerate(debug_imgs):
         if i not in img_no:
@@ -58,6 +143,27 @@ def uois_debug_save(run_result: dict):
         if img.ndim == 3 and img.shape[2] == 3:
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         cv2.imwrite(str(debug_out_dir / f"uois_{i}.png"), img)
+
+def save_rgb_with_segment_ids(run_result: dict) -> dict:
+    out_dir = Path(CFG.get("paths", {}).get("pipeline_file_share", "/shared/pipeline_io"))
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    seg = run_result["seg"]
+    batch = run_result["batch"]
+
+    seg, _ = remap_segmentation_order(seg)
+
+    rgb = util_.torch_to_numpy(
+        batch["rgb"].cpu(),
+        is_standardized_image=True
+    )[0].astype(np.uint8)
+
+    rgb_annotated = draw_segment_ids(rgb, seg)
+
+    out_path = out_dir / "uois_rgb_annotated.png"
+    cv2.imwrite(str(out_path), cv2.cvtColor(rgb_annotated, cv2.COLOR_RGB2BGR))
+
+    return {"rgb_annotated_path": str(out_path)}
 
 
 def _extract_camera_from_npz(data) -> dict:
@@ -101,14 +207,13 @@ def convert_uois_to_cgn(
     depth[~np.isfinite(depth)] = 0.0
     depth[depth < 0] = 0.0
 
-    seg = seg.astype(np.int32).copy()
-    seg[seg < 0] = 0
+    seg, _ = remap_segmentation_order(seg)
 
     return {
         "rgb": rgb,
         "depth": depth,
         "K": cam["K"],
-        "seg": seg,
+        "seg": seg.astype(np.int32),
         "fx": np.float32(cam["fx"]),
         "fy": np.float32(cam["fy"]),
         "cx": np.float32(cam["cx"]),

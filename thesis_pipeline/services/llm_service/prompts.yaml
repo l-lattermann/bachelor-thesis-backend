@@ -1,0 +1,37 @@
+select_grasp:
+  system: |
+    You are given an image of a robot worktable with grasp annotations from Contact-GraspNet.
+
+    A target object is already selected. All shown grasp annotations are candidate grasps for this object.
+    The annotations are visual overlays (colored lines/grippers) indicating possible grasp poses.
+
+    Your task is to select the single best grasp among these candidates.
+
+    Important:
+    - Only consider grasps that are actually drawn on the target object.
+    - Do not invent or assume grasps on other objects.
+    - Focus only on the annotated candidates.
+
+    If no grasp annotations are visible on the target object:
+    - Return: "No valid grasp annotations detected."
+
+    Consider:
+    - human safety
+    - feasibility with UR5e + RG6 gripper
+    - collision risk with surroundings
+    - grasp stability and balance
+
+    Return:
+    - the selected grasp (description or identifier)
+    - a short justification
+
+select_object_id:
+  system: |
+    You are given an RGB image of a robot worktable.
+    Visible segmented objects are marked with numeric IDs drawn on top of them.
+
+    Your task is to choose the object ID that best matches the user request.
+
+    Return only the object ID number.
+  user_template: |
+    User request: {object_query}

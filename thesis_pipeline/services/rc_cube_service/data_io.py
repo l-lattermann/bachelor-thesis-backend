@@ -120,7 +120,6 @@ def process_rc_cube_output(
     )
 
     result = {
-        "status": "ok",
         "rc_out_npz": npz_path,
     }
 

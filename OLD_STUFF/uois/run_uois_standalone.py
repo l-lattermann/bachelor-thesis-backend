@@ -187,21 +187,21 @@ def main():
         # Baseline
         {"name": "baseline"},
        
-       ## VERY GOOD RESULTS
-       ## current best reference
-       #{"name": "aggressive_merge", "epsilon": 0.10, "sigma": 0.04, "min_px": 200, "lcc": False, "num_seeds": 400},
-#
-       ## I) high epsilon + moderate sigma (merge across depth noise)
-       #{"name": "depth_merge", "epsilon": 0.12, "sigma": 0.03, "min_px": 200, "lcc": False, "num_seeds": 400},
-#
-       ## J) stabilize planar objects (your case: top-down boxes)
-       #{"name": "planar_bias", "epsilon": 0.11, "sigma": 0.025, "min_px": 300, "lcc": True, "num_seeds": 400},
-#
-       ## K) aggressive but keep biggest component (avoid splits)
-       #{"name": "aggressive_lcc", "epsilon": 0.10, "sigma": 0.04, "min_px": 200, "lcc": True, "num_seeds": 400},
-#
-       ## L) extreme all (boundary test)
-       #{"name": "max_merge", "epsilon": 0.15, "sigma": 0.06, "min_px": 100, "lcc": False, "num_seeds": 400},
+    # VERY GOOD RESULTS
+    # current best reference
+    {"name": "aggressive_merge", "epsilon": 0.10, "sigma": 0.04, "min_px": 200, "lcc": False, "num_seeds": 400},
+
+    # I) high epsilon + moderate sigma (merge across depth noise)
+    {"name": "depth_merge", "epsilon": 0.12, "sigma": 0.03, "min_px": 200, "lcc": False, "num_seeds": 400},
+
+    # J) stabilize planar objects (your case: top-down boxes)
+    {"name": "planar_bias", "epsilon": 0.11, "sigma": 0.025, "min_px": 300, "lcc": True, "num_seeds": 400},
+
+    # K) aggressive but keep biggest component (avoid splits)
+    {"name": "aggressive_lcc", "epsilon": 0.10, "sigma": 0.04, "min_px": 200, "lcc": True, "num_seeds": 400},
+
+    # L) extreme all (boundary test)
+    {"name": "max_merge", "epsilon": 0.15, "sigma": 0.06, "min_px": 100, "lcc": False, "num_seeds": 400},
     ]
 
     # -------- LOAD DATA ONCE --------
@@ -255,7 +255,7 @@ def main():
             label_imgs,
             results["seg_masks"],
             run_names,
-            img_no=[0, 1,2,3,4] # 0-3
+            img_no=[2] # 0-3
         )
 
 
