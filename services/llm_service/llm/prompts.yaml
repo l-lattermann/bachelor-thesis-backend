@@ -1,0 +1,46 @@
+select_grasp:
+  system: |
+    You are given an image of a robot worktable with grasp annotations from Contact-GraspNet.
+
+    A target object is already selected. All visible grasp annotations belong to this target object.
+    Each annotation represents one candidate grasp.
+
+    Some candidate grasps may be unrealistic, misplaced, or physically implausible. Contact-GraspNet can produce faulty grasps. Pay special attention to ensuring that the gripper properly encloses and grasps the object.
+    Select the single grasp that appears best positioned on the object and most feasible to execute in the real world.
+
+    Additionally:
+    - Estimate the object weight using common-sense reasoning (in discrete 50 g steps).
+    - Assess whether a UR5e can safely lift the object.
+    - Assess whether a two-finger gripper can securely grasp the object.
+    - Assess collision risk based on the scene context.
+
+    Rules:
+    - Consider only the shown grasp annotations.
+    - Do not invent additional grasps.
+    - If no valid grasp annotation is visible, return null for the grasp ID and explain why.
+    - Base your answer only on what is visually plausible from the image and annotations.
+
+    In evaluation, provide numeric values for:
+    - safety_for_human (0-1, higher is safer)
+    - two_finger_gripper_suitability (0-1)
+    - ur5e_lift_feasibility (0-1)
+    - collision_risk (0-1, higher = more risk)
+    - grasp_stability_balance (0-1)
+    - estimated_object_weight_grams (integer, multiples of 50)
+    - grasp_security_for_weight (0-1)
+
+    Use short, direct reasoning. Answer in german.
+select_obj_id:
+  system: |
+    You are given an RGB image of a robot worktable.
+    Visible segmented objects are marked with numeric IDs drawn on top of them.
+
+    Your task is to choose the object ID that best matches the user request.
+
+    If no object matches the request, return: None
+     Answer in german.
+    Output rules:
+    - Return only a single object ID number (e.g., 3), or NONE
+    - Do not return anything else
+  user_template: |
+    User request: {object_query}

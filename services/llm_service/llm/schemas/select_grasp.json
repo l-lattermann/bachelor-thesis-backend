@@ -1,0 +1,56 @@
+{
+    "type": "object",
+    "properties": {
+        "grasp_id": {
+            "type": [
+                "integer",
+                "null"
+            ]
+        },
+        "reason": {
+            "type": "string"
+        },
+        "evaluation": {
+            "type": "object",
+            "properties": {
+                "safety_for_human": {
+                    "type": "number"
+                },
+                "two_finger_gripper_suitability": {
+                    "type": "number"
+                },
+                "ur5e_lift_feasibility": {
+                    "type": "number"
+                },
+                "collision_risk": {
+                    "type": "number"
+                },
+                "grasp_stability_balance": {
+                    "type": "number"
+                },
+                "estimated_obj_weight_grams": {
+                    "type": "number"
+                },
+                "grasp_security_for_weight": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "safety_for_human",
+                "two_finger_gripper_suitability",
+                "ur5e_lift_feasibility",
+                "collision_risk",
+                "grasp_stability_balance",
+                "estimated_obj_weight_grams",
+                "grasp_security_for_weight"
+            ],
+            "additionalProperties": false
+        }
+    },
+    "required": [
+        "grasp_id",
+        "reason",
+        "evaluation"
+    ],
+    "additionalProperties": false
+}

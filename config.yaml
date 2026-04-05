@@ -5,56 +5,48 @@ project:
 network:
   orchestrator_url: http://orchestrator:8000
   rc_cube_service_url: http://rc_cube:8000
-  uois_service_url: http://uois:8000
+  sam_service_url: http://sam:8000
   contact_graspnet_service_url: http://contactgraspnet:8000
   llm_service_url: http://llm:8000
 
 paths:
   output_debug: /shared/debug
   pipeline_file_share: /shared/pipeline_io
-  rc_mock_input: /shared/rc_cube_mock
+  rc_mock_cam_input: /shared/debug/rc_cube/rc_cube_mock_cam_output
+  rc_mock_full_input: /shared/pipeline_io/rc_cube_output.npz
 
 pipeline:
-  mock_rc_cube: false
-  ll_obj_selection: true
+  mock_rc_cube_cam: false
+  mock_rc_cube_full: false
+  use_obj_selection: true
 
 rc_cube:
+  output_npz: /shared/pipeline_io/rc_cube_pointcloud.npz
+  output_left_img: /shared/pipeline_io/left.png
   timeout_sec: 5.0
   max_message_size_mb: 300
-  
+  left_enabled: true
+  right_enabled: false
+  disparity_enabled: true
+  disparity_error_enabled: false
+  confidence_enabled: false
+  mesh_enabled: false
+  color: true
 
-uois:
-  img_numbers_to_save: [0, 2] # Image numbers to save for debugging [0, 4]
-  checkpoint_dir: /app/uois/checkpoints
+sam:
+  device: cuda
+  checkpoint: /app/checkpoints/sam2.1_l.pt
+  output_npz: /shared/pipeline_io/sam_segmented_output.npz
+  output_png: /shared/pipeline_io/sam_segmented_output.png
 
-  dsn_config:
-    feature_dim: 64
-    max_GMS_iters: 10
-    num_seeds: 400
-    epsilon: 0.10
-    sigma: 0.04
-    subsample_factor: 2
-    min_pixels_thresh: 500
-    tau: 15.0 
+  min_area: 100
+  max_area_ratio: 0.5
 
-  rrn_config:
-    feature_dim: 64
-    img_H: 224
-    img_W: 224
-    use_coordconv: false
 
-  uois3d_config:
-    padding_percentage: 0.25
-    use_open_close_morphology: true
-    open_close_morphology_ksize: 9
-    use_largest_connected_component: false
-
-  checkpoints:
-    dsn: DepthSeedingNetwork_3D_TOD_checkpoint.pth
-    rrn: RRN_OID_checkpoint.pth
 
 contact_graspnet:
   checkpoint_dir: /app/contact_graspnet/contact_graspnet/checkpoints/scene_test_2048_bs3_hor_sigma_001
+  output_png: /shared/pipeline_io/cgn_annotated_output.png
 
   prediction:
     z_min: 0.0
@@ -64,17 +56,21 @@ contact_graspnet:
     forward_passes: 1
     segmap_id: 4
 
-
   selection:
-    num_grasps: 5
+    num_grasps: 3
     top_score_candidates: 10
-    distance_div_filtering: true
-    gripper_width: 0.016
+    gripper_width: 0.16
+    k_means_clustering: true
+    k_means:
+      kmeans_n_init: 10
+      kmeans_random_state: 0
+      orientation_weight: 0.7
 
   gripper_projection:
-    use_default_opening: true
+    use_default_opening: false
     default_opening: 0.080
-    draw_confidence: false
+    gripper_line_width: 1
+    number_line_width: 1
 
   camera:
     fallback_fx: 525.0

@@ -7,9 +7,7 @@ import numpy as np
 import argparse
 import socket
 import importlib
-import time
 import os
-import scipy.misc
 import sys
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR

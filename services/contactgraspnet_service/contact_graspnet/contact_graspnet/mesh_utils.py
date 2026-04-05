@@ -3,10 +3,6 @@
 
 from __future__ import print_function
 
-import argparse
-from collections import OrderedDict
-import errno
-import json
 import os
 import numpy as np
 import pickle

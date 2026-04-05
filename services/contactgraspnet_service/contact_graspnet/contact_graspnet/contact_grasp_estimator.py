@@ -2,7 +2,6 @@ import importlib
 import numpy as np
 import sys
 import os
-import time
 
 import tensorflow.compat.v1 as tf
 tf.disable_eager_execution()

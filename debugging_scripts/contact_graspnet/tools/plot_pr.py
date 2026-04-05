@@ -4,7 +4,6 @@ from dict_diff import findDiff
 import sys
 import glob2
 import os
-import yaml
 sys.path.append('/home/msundermeyer/ngc_ws/6dof-graspnet/contact_graspnet')
 import utilities
 import copy

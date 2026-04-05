@@ -1,11 +1,9 @@
-from genericpath import exists
 import os
 import sys
 import argparse
 from datetime import datetime
 import numpy as np
 import time
-from tqdm import tqdm
 
 CONTACT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -3,11 +3,7 @@ from __future__ import absolute_import
 
 import numpy as np
 import copy
-import cv2
-import math
-import os
 from copy import deepcopy
-import multiprocessing as mp
 import pyrender
 import trimesh
 import trimesh.transformations as tra

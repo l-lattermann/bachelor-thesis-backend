@@ -3,8 +3,6 @@
     Reference: https://github.com/charlesq34/pointnet
 '''
 import tensorflow as tf
-import numpy as np
-import math
 import sys
 import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

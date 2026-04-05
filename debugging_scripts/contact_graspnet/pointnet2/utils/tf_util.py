@@ -4,7 +4,6 @@ Author: Charles R. Qi
 Date: November 2017
 """
 
-import numpy as np
 try:
     import tensorflow.compat.v1 as tf
     tf.disable_eager_execution()

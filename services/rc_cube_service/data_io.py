@@ -3,17 +3,16 @@ import os
 import cv2
 import numpy as np
 import yaml
+import time
 
 
-def disparity_to_uois_dict(
+def disparity_to_sam_dict(
     disp_arr,
     left_rgb,
     cam,
     disp_params,
     conf=None,
     conf_thr=32,
-    seg_id=1,
-    background_label=0,
 ):
     H, W = disp_arr.shape[:2]
 
@@ -69,8 +68,7 @@ def disparity_to_uois_dict(
         rgb_out = cv2.resize(rgb_out, (W, H), interpolation=cv2.INTER_NEAREST)
     rgb_out = rgb_out.astype(np.uint8)
 
-    label = np.full((H, W), background_label, dtype=np.int32)
-    label[valid] = seg_id
+    label = np.zeros((H, W), dtype=np.int32)
 
     return {
         "rgb": rgb_out,
@@ -90,49 +88,82 @@ def process_rc_cube_output(
     disp_arr,
     cam,
     disp_params,
-    out_dir="/shared/pipeline_io",
+    output_npz_path,
+    output_left_img_path,
     debug=False,
     debug_base_dir="/shared/debug",
+    save_pointcloud_npc_with_timestamp=True,
 ):
-    os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(os.path.dirname(output_npz_path), exist_ok=True)
+    os.makedirs(os.path.dirname(output_left_img_path), exist_ok=True)
 
-    uois_dict = disparity_to_uois_dict(
+    sam_dict = disparity_to_sam_dict(
         disp_arr=disp_arr,
         left_rgb=left_rgb,
         cam=cam,
         disp_params=disp_params,
         conf=None,
-        seg_id=1,
-        background_label=0,
     )
 
-    npz_path = os.path.join(out_dir, "rc_cube_output.npz")
+    # --- MAIN PIPELINE OUTPUTS ---
+    npz_path = output_npz_path
+    left_png_pipeline = output_left_img_path
+
     np.savez_compressed(
         npz_path,
-        rgb=uois_dict["rgb"],
-        xyz=uois_dict["xyz"],
-        label=uois_dict["label"],
-        fx=uois_dict["fx"],
-        fy=uois_dict["fy"],
-        cx=uois_dict["cx"],
-        cy=uois_dict["cy"],
-        width=uois_dict["width"],
-        height=uois_dict["height"],
+        rgb=sam_dict["rgb"],
+        xyz=sam_dict["xyz"],
+        label=sam_dict["label"],
+        fx=sam_dict["fx"],
+        fy=sam_dict["fy"],
+        cx=sam_dict["cx"],
+        cy=sam_dict["cy"],
+        width=sam_dict["width"],
+        height=sam_dict["height"],
     )
+
+    cv2.imwrite(left_png_pipeline, cv2.cvtColor(sam_dict["rgb"], cv2.COLOR_RGB2BGR))
 
     result = {
         "rc_out_npz": npz_path,
+        "left_png_path": left_png_pipeline,
     }
 
+    # --- TIMESTAMPED DEBUG NPZ ---
+    debug_npz_path = None
+    if save_pointcloud_npc_with_timestamp:
+        os.makedirs(debug_base_dir, exist_ok=True)
+
+        timestamp = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+        filename = f"output_{timestamp}.npz"
+        debug_npz_path = os.path.join(debug_base_dir, filename)
+
+        np.savez_compressed(
+            debug_npz_path,
+            rgb=sam_dict["rgb"],
+            xyz=sam_dict["xyz"],
+            label=sam_dict["label"],
+            fx=sam_dict["fx"],
+            fy=sam_dict["fy"],
+            cx=sam_dict["cx"],
+            cy=sam_dict["cy"],
+            width=sam_dict["width"],
+            height=sam_dict["height"],
+        )
+
+    if debug_npz_path is not None:
+        result["debug_npz"] = debug_npz_path
+
+    # --- EXTRA DEBUG ARTIFACTS ---
     if debug:
         os.makedirs(debug_base_dir, exist_ok=True)
 
-        left_png = os.path.join(debug_base_dir, "left.png")
+        left_png_debug = os.path.join(debug_base_dir, "left.png")
         disp_png = os.path.join(debug_base_dir, "disparity.png")
         cam_yaml = os.path.join(debug_base_dir, "cam.yaml")
         disp_yaml = os.path.join(debug_base_dir, "disp_params.yaml")
 
-        cv2.imwrite(left_png, cv2.cvtColor(left_rgb, cv2.COLOR_RGB2BGR))
+        cv2.imwrite(left_png_debug, cv2.cvtColor(sam_dict["rgb"], cv2.COLOR_RGB2BGR))
 
         disp_vis = disp_arr.astype(np.float32)
         mask = disp_vis > 0
@@ -147,12 +178,12 @@ def process_rc_cube_output(
         cv2.imwrite(disp_png, disp_vis)
 
         scaled_cam = {
-            "fx": float(uois_dict["fx"]),
-            "fy": float(uois_dict["fy"]),
-            "cx": float(uois_dict["cx"]),
-            "cy": float(uois_dict["cy"]),
-            "width": int(uois_dict["width"]),
-            "height": int(uois_dict["height"]),
+            "fx": float(sam_dict["fx"]),
+            "fy": float(sam_dict["fy"]),
+            "cx": float(sam_dict["cx"]),
+            "cy": float(sam_dict["cy"]),
+            "width": int(sam_dict["width"]),
+            "height": int(sam_dict["height"]),
         }
 
         with open(cam_yaml, "w") as f:
@@ -162,7 +193,7 @@ def process_rc_cube_output(
             yaml.safe_dump({"disparity": disp_params}, f, sort_keys=False)
 
         result.update({
-            "left": left_png,
+            "left_debug": left_png_debug,
             "disparity": disp_png,
             "cam": cam_yaml,
             "disp_params": disp_yaml,
@@ -172,14 +203,14 @@ def process_rc_cube_output(
                 "rgb_max": int(left_rgb.max()),
                 "rgb_mean": float(left_rgb.mean()),
                 "disp_shape": list(disp_arr.shape),
-                "cam_hw": [int(uois_dict["height"]), int(uois_dict["width"])],
+                "cam_hw": [int(sam_dict["height"]), int(sam_dict["width"])],
             },
         })
 
     return result
 
 
-def load_rc_cube_mock(folder: str):
+def load_rc_cube_mock_cam_output(folder: str):
     folder = Path(folder)
 
     left_img_path = next(folder.glob("*_left_*.png"))

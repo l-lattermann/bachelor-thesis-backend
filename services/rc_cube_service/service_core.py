@@ -1,6 +1,5 @@
 import grpc
 import numpy as np
-import yaml
 
 from protobuf_msgs.generated import image_interface_pb2 as pb2
 from protobuf_msgs.generated import image_interface_pb2_grpc as pb2_grpc

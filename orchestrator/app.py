@@ -1,255 +1,210 @@
 from pathlib import Path
-import yaml
-import requests
 import time
+import traceback
+from typing import Optional
 
+import requests
+import yaml
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Optional
 
 
 app = FastAPI(title="Orchestrator")
 
 CONFIG_PATH = Path("/app/config.yaml")
-CFG = None
 
+CFG = None
+NET = None
+PIPELINE_CFG = None
 
 
 class PipelineRequest(BaseModel):
     object_query: Optional[str] = None
 
 
-def load_config() -> dict:
-    with CONFIG_PATH.open("r") as f:
-        return yaml.safe_load(f)
-
-
-def wait_for_health(name: str, base_url: str, retries: int = 120, delay: float = 2.0) -> None:
-    last_error = None
-
+def wait_for_health(name: str, url: str, retries: int = 120, delay: float = 2.0) -> None:
+    last = None
     for _ in range(retries):
         try:
-            res = requests.get(f"{base_url}/health", timeout=10)
-            if res.status_code == 200:
+            r = requests.get(f"{url}/health", timeout=10)
+            if r.status_code == 200:
                 return
-            last_error = f"status {res.status_code}: {res.text}"
-        except requests.RequestException as e:
-            last_error = str(e)
-
+            last = r.text
+        except Exception as e:
+            last = str(e)
         time.sleep(delay)
 
-    raise RuntimeError(f"{name} not reachable after {retries} retries: {last_error}")
+    raise RuntimeError(f"{name} not reachable: {last}")
+
+
+def post_json(url: str, payload: dict, name: str) -> dict:
+    try:
+        r = requests.post(url, json=payload, timeout=120)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{name} failed: {e}")
+
+    if r.status_code != 200:
+        raise HTTPException(status_code=500, detail=f"{name} error: {r.text}")
+
+    return r.json()
 
 
 @app.on_event("startup")
-def startup_event():
-    global CFG
-    CFG = load_config()
+def startup() -> None:
+    global CFG, NET, PIPELINE_CFG
+
+    CFG = yaml.safe_load(CONFIG_PATH.read_text())
+    NET = CFG["network"]
+    PIPELINE_CFG = CFG["pipeline"]
 
     services = {
-        "rc_cube": CFG["network"]["rc_cube_service_url"],
-        "uois": CFG["network"]["uois_service_url"],
-        "contact_graspnet": CFG["network"]["contact_graspnet_service_url"],
-        "llm": CFG["network"]["llm_service_url"],
+        "rc_cube": NET["rc_cube_service_url"],
+        "sam": NET["sam_service_url"],
+        "cgn": NET["contact_graspnet_service_url"],
+        "llm": NET["llm_service_url"],
     }
 
-    try:
-        for name, url in services.items():
-            wait_for_health(name, url)
+    for name, url in services.items():
+        wait_for_health(name, url)
 
-        time.sleep(1)
-        print("============================")
-        print("===     ORCHESTRATOR     ===")
-        print("============================\n\n")
-        health_all()
-
-    except Exception as e:
-        print(f"[STARTUP ERROR] {e}")
-        raise
+    print("============================")
+    print("===     ORCHESTRATOR     ===")
+    print("============================")
 
 
 @app.get("/health")
-def health():
-    return {"status": "ok", "service": "orchestrator"}
-
-
-@app.get("/health_all")
-def health_all():
-    results = {}
-
-    services = {
-        "rc_cube": CFG["network"]["rc_cube_service_url"],
-        "uois": CFG["network"]["uois_service_url"],
-        "contact_graspnet": CFG["network"]["contact_graspnet_service_url"],
-        "llm": CFG["network"]["llm_service_url"],
-    }
-
-    overall_ok = True
-
-    for name, url in services.items():
-        try:
-            res = requests.get(f"{url}/health", timeout=5)
-            if res.status_code == 200:
-                results[name] = "ok"
-            else:
-                results[name] = f"error ({res.status_code})"
-                overall_ok = False
-        except Exception as e:
-            results[name] = f"unreachable ({e})"
-            overall_ok = False
-
-    return {
-        "status": "ok" if overall_ok else "degraded",
-        "services": results,
-    }
-
-
-def post_json(url: str, payload: dict, step_name: str) -> dict:
-    try:
-        res = requests.post(url, json=payload, timeout=120)
-    except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"{step_name} request failed: {e}")
-
-    if res.status_code != 200:
-        raise HTTPException(
-            status_code=500,
-            detail=f"{step_name} failed: {res.status_code} {res.text}"
-        )
-
-    try:
-        return res.json()
-    except ValueError:
-        raise HTTPException(status_code=500, detail=f"{step_name} returned invalid JSON")
+def health() -> dict:
+    return {"status": "ok"}
 
 
 @app.post("/run_pipeline")
-def run_pipeline(req: PipelineRequest):
+def run_pipeline(req: PipelineRequest) -> dict:
+    step = "init"
+    rc = None
+    sam = None
+    cgn = None
+    llm_obj = None
+    llm_grasp = None
+    obj_id = None
+
     try:
-        print("[ORCH] Starting pipeline")
+        print("[ORCH] Start")
 
-        rc_cube_url = CFG["network"]["rc_cube_service_url"]
-        uois_url = CFG["network"]["uois_service_url"]
-        cgn_url = CFG["network"]["contact_graspnet_service_url"]
-        llm_url = CFG["network"]["llm_service_url"]
+        rc_url = NET["rc_cube_service_url"]
+        sam_url = NET["sam_service_url"]
+        cgn_url = NET["contact_graspnet_service_url"]
+        llm_url = NET["llm_service_url"]
 
+        step = "rc"
         t0 = time.perf_counter()
-        print("[ORCH] Calling RC Cube...")
-        rc_data = post_json(
-            f"{rc_cube_url}/fetch_disparity_and_left",
-            {},
-            "RC Cube"
-        )
-        rc_cube_time_sec = time.perf_counter() - t0
-        raw_pointcloud = rc_data["result_path"]
+        rc = post_json(f"{rc_url}/fetch_disparity_and_left", {}, "rc")
+        t_rc = time.perf_counter() - t0
 
+        step = "sam"
         t0 = time.perf_counter()
-        print("[ORCH] Calling UOIS...")
-        uois_data = post_json(
-            f"{uois_url}/predict",
-            {"npz_path": raw_pointcloud},
-            "UOIS"
+        sam = post_json(
+            f"{sam_url}/predict",
+            {
+                "npz_path": rc["rc_out_npz"],
+                "image_path": rc["left_png_path"],
+            },
+            "sam",
         )
-        uois_time_sec = time.perf_counter() - t0
-        segmented_pointcloud = uois_data["result_path"]
-        rgb_annotated_img = uois_data["rgb_annotated_path"]
+        t_sam = time.perf_counter() - t0
 
-        selected_object_id = None
-        llm_object_time_sec = 0.0
-        llm_object_data = None
-
-        if CFG.get("pipeline", {}).get("use_obj_selection", True): 
-            if getattr(req, "object_query", None):
-                t0 = time.perf_counter()
-                print("[ORCH] Calling LLM for object selection...")
-                llm_object_data = post_json(
-                    f"{llm_url}/generate",
-                    {
-                        "prompt_name": "select_object_id",
-                        "image_path": rgb_annotated_img,
-                        "prompt_vars": {
-                            "object_query": req.object_query
-                        }
-                    },
-                    "LLM object selection"
-                )
-                llm_object_time_sec = time.perf_counter() - t0
-
-                resp = str(llm_object_data.get("response", "")).strip()
-
-                if resp.upper() == "NONE":
-                    selected_object_id = None
-                else:
-                    try:
-                        selected_object_id = int(resp)
-                    except ValueError:
-                        selected_object_id = None
-        else:
-            select_object_id = int(
-                CFG.get("contact_graspnet", {}).get("prediction", {}).get("segmap_id")
+        t_llm_obj = 0.0
+        if PIPELINE_CFG["use_obj_selection"] and req.object_query:
+            step = "llm_obj"
+            t0 = time.perf_counter()
+            llm_obj = post_json(
+                f"{llm_url}/generate",
+                {
+                    "prompt_name": "select_obj_id",
+                    "image_path": sam["rgb_annotated_path"],
+                    "prompt_vars": {"object_query": req.object_query},
+                },
+                "llm_obj",
             )
+            t_llm_obj = time.perf_counter() - t0
 
+            resp = llm_obj["response"]
+            if isinstance(resp, dict):
+                val = resp.get("object_id")
+                if isinstance(val, int) or val is None:
+                    obj_id = val
+
+        step = "cgn"
         t0 = time.perf_counter()
-        print("[ORCH] Calling Contact-GraspNet...")
-
-        cgn_payload = {"npz_path": segmented_pointcloud}
-        cgn_payload["object_id"] = selected_object_id
-
-        cgn_data = post_json(
+        cgn = post_json(
             f"{cgn_url}/inference",
-            cgn_payload,
-            "Contact-GraspNet"
+            {
+                "npz_path": sam["result_path"],
+                "object_id": obj_id,
+            },
+            "cgn",
         )
+        t_cgn = time.perf_counter() - t0
 
-        contact_graspnet_time_sec = time.perf_counter() - t0
-        grasp_annotated_img = cgn_data["result_path"]
-
-        combined_inference_time_sec = (
-            rc_cube_time_sec + uois_time_sec + contact_graspnet_time_sec
-        )
-
+        step = "llm_grasp"
         t0 = time.perf_counter()
-        print("[ORCH] Calling LLM for grasp selection...")
-        llm_grasp_data = post_json(
+        llm_grasp = post_json(
             f"{llm_url}/generate",
             {
                 "prompt_name": "select_grasp",
-                "image_path": grasp_annotated_img,
+                "image_path": cgn["result_path"],
             },
-            "LLM grasp selection"
+            "llm_grasp",
         )
-        llm_grasp_time_sec = time.perf_counter() - t0
-        llm_grasp_response = llm_grasp_data["response"]
+        t_llm_grasp = time.perf_counter() - t0
 
-        print("[ORCH] Pipeline finished")
+        print("[ORCH] Done")
 
-        return {
+        response = {
             "status": "ok",
-            "raw_pointcloud": raw_pointcloud,
-            "segmented_pointcloud": segmented_pointcloud,
-            "rgb_annotated_img": rgb_annotated_img,
-            "selected_object_id": selected_object_id,
-            "grasp_annotated_img": grasp_annotated_img,
-            "llm_grasp_response": llm_grasp_response,
-            "debug": {
-                "rc_cube": rc_data,
-                "uois": uois_data,
-                "llm_object_selection": llm_object_data,
-                "contact_graspnet": cgn_data,
-                "llm_grasp_selection": llm_grasp_data,
-            },
+            "raw_pointcloud": rc["rc_out_npz"],
+            "segmented_pointcloud": sam["result_path"],
+            "rgb_annotated_img": sam["rgb_annotated_path"],
+            "selected_object_id": obj_id,
+            "grasp_annotated_img": cgn["result_path"],
+            "llm_grasp_response": llm_grasp["response"],
             "timings": {
-                "rc_cube_time_sec": round(rc_cube_time_sec, 4),
-                "uois_time_sec": round(uois_time_sec, 4),
-                "llm_object_selection_time_sec": round(llm_object_time_sec, 4),
-                "contact_graspnet_time_sec": round(contact_graspnet_time_sec, 4),
-                "combined_inference_time_sec": round(combined_inference_time_sec, 4),
-                "llm_grasp_selection_time_sec": round(llm_grasp_time_sec, 4),
+                "rc": round(t_rc, 4),
+                "sam": round(t_sam, 4),
+                "llm_obj": round(t_llm_obj, 4),
+                "cgn": round(t_cgn, 4),
+                "llm_grasp": round(t_llm_grasp, 4),
             },
         }
 
+        if CFG["project"]["debug"]:
+            response["debug"] = {
+                "rc_cube": rc,
+                "sam": sam,
+                "cgn": cgn,
+                "llm_obj": llm_obj,
+                "llm_grasp": llm_grasp,
+            }
+
+        return response
+
     except HTTPException:
         raise
-    except KeyError as e:
-        raise HTTPException(status_code=500, detail=f"Missing expected key: {e}")
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "step": step,
+                "error": str(e),
+                "type": type(e).__name__,
+                "traceback": traceback.format_exc(),
+                "context": {
+                    "rc": rc,
+                    "sam": sam,
+                    "cgn": cgn,
+                    "llm_obj": llm_obj,
+                    "llm_grasp": llm_grasp,
+                    "object_id": obj_id,
+                },
+            },
+        )

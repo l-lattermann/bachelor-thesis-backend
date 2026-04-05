@@ -5,16 +5,15 @@ from __future__ import print_function
 import sys
 import os
 import tensorflow as tf
-import numpy as np
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(ROOT_DIR, 'utils'))
 import tf_util
 from pointnet_util import pointnet_sa_module, pointnet_sa_module_msg, pointnet_fp_module
-from model_util import NUM_HEADING_BIN, NUM_SIZE_CLUSTER, NUM_OBJECT_POINT
+from model_util import NUM_HEADING_BIN, NUM_SIZE_CLUSTER
 from model_util import point_cloud_masking, get_center_regression_net
-from model_util import placeholder_inputs, parse_output_to_tensors, get_loss
+from model_util import parse_output_to_tensors, get_loss
 
 
 def get_instance_seg_v2_net(point_cloud, one_hot_vec,

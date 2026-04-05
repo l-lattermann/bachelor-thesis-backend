@@ -55,16 +55,14 @@ def _override_checkpoint_config(model_cfg: dict, cgn_cfg: dict) -> dict:
     return model_cfg
 
 
-def load_model():
+def load_model(checkpoint_dir: str = None):
     global _MODEL, _SESS
 
     if _MODEL is not None and _SESS is not None:
         return _MODEL, _SESS
 
-    ckpt_dir = CGN_CFG["checkpoint_dir"]
-
     model_cfg = config_utils.load_config(
-        ckpt_dir,
+        checkpoint_dir,
         batch_size=1,
         arg_configs=[],
     )
@@ -80,7 +78,7 @@ def load_model():
     sess = tf.Session(config=tf_config)
 
     saver = tf.train.Saver(save_relative_paths=True)
-    estimator.load_weights(sess, saver, ckpt_dir, mode="test")
+    estimator.load_weights(sess, saver, checkpoint_dir, mode="test")
 
     dummy_pc = np.random.uniform(
         low=-0.1,
@@ -134,7 +132,7 @@ def run_contact_graspnet(npz_path: str, object_id: Optional[int] = None):
         segmap=seg,
         rgb=rgb,
         z_range=[pred_cfg["z_min"], pred_cfg["z_max"]],
-        segmap_id=object_id if object_id is not None else None,
+        segmap_id=object_id,
         skip_border_objects=pred_cfg.get("skip_border_objects", False),
         margin_px=pred_cfg.get("margin_px", 5),
     )

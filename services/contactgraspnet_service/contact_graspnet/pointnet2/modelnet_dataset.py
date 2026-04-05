@@ -4,7 +4,6 @@
 
 import os
 import os.path
-import json
 import numpy as np
 import sys
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

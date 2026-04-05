@@ -3,3 +3,4 @@ uvicorn
 requests 
 plyfile 
 pyyaml
+scikit-learn==1.0.2

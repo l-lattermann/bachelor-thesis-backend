@@ -8,48 +8,45 @@ import data_io as io_utils
 app = FastAPI()
 
 CONFIG_PATH = "/app/config.yaml"
-cfg = None
+
+CFG = RC_CFG = PIPELINE_CFG = PATHS_CFG = None
+OUT_DIR = DEBUG_DIR = RC_CAM_MOCK_DIR = RC_FULL_MOCK_DIR = None
+
 client = None
-paths_cfg = None
-out_dir = None
-debug_base_dir = None
-rc_mock_dir = None
 
-
-def load_config():
-    with open(CONFIG_PATH, "r") as f:
-        return yaml.safe_load(f)
-
-def get_env(name: str, required: bool = False):
-    value = os.environ.get(name)
-    if required and not value:
-        raise RuntimeError(f"Missing env var: {name}")
-    return value
 
 @app.on_event("startup")
-def startup_event():
-    global cfg
-    global client
-    global paths_cfg
-    global out_dir
-    global debug_base_dir
-    global rc_mock_dir
+def startup():
+    global CFG, RC_CFG, PIPELINE_CFG, PATHS_CFG
+    global client, OUT_DIR, DEBUG_DIR, RC_CAM_MOCK_DIR, RC_FULL_MOCK_DIR
+    global OUTPUT_NPZ_PATH, OUTPUT_LEFT_IMG_PATH
 
-    cfg = load_config()
+    CFG = yaml.safe_load(open(CONFIG_PATH).read())
 
-    CONFIG = cfg.get("rc_cube", {})
-    IP_ADDRESS = get_env("RC_CUBE_IP", required=True)
+    RC_CFG = CFG["rc_cube"]
+    PIPELINE_CFG = CFG["pipeline"]
+    PATHS_CFG = CFG["paths"]
 
-    paths_cfg = cfg.get("paths", {})
-    out_dir = paths_cfg.get("pipeline_file_share", "/shared/pipeline_io")
-    debug_base_dir = paths_cfg.get("output_debug", "/shared/debug")
-    rc_mock_dir = paths_cfg.get("rc_mock_input", "/shared/rc_cube_mock")
+    ip = os.environ["RC_CUBE_IP"]
 
-    os.makedirs(out_dir, exist_ok=True)
-    os.makedirs(debug_base_dir, exist_ok=True)
-    os.makedirs(rc_mock_dir, exist_ok=True)
+    OUT_DIR = PATHS_CFG["pipeline_file_share"]
 
-    client = RcCubeGrpcClient(CONFIG, IP_ADDRESS)
+    DEBUG_BASE_DIR = PATHS_CFG["output_debug"]
+    DEBUG_DIR = os.path.join(DEBUG_BASE_DIR, "rc_cube")
+
+    RC_CAM_MOCK_DIR = PATHS_CFG["rc_mock_cam_input"]
+    RC_FULL_MOCK_DIR = PATHS_CFG["rc_mock_full_input"]
+
+    OUTPUT_NPZ_PATH = RC_CFG["output_npz"]
+    OUTPUT_LEFT_IMG_PATH = RC_CFG["output_left_img"]
+
+    # ensure dirs exist
+    os.makedirs(os.path.dirname(OUTPUT_NPZ_PATH), exist_ok=True)
+    os.makedirs(os.path.dirname(OUTPUT_LEFT_IMG_PATH), exist_ok=True)
+    os.makedirs(DEBUG_DIR, exist_ok=True)
+    os.makedirs(RC_CAM_MOCK_DIR, exist_ok=True)
+
+    client = RcCubeGrpcClient(RC_CFG, ip)
 
     print("===============================")
     print("===     RC CUBE SERVICE      ==")
@@ -58,41 +55,34 @@ def startup_event():
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "rc_cube_service"}
+    return {"status": "ok"}
 
 
 @app.post("/fetch_disparity_and_left")
 def fetch_disparity_and_left():
     try:
-        global cfg
-        global client
-        global paths_cfg
-        global out_dir
-        global debug_base_dir
-        global rc_mock_dir
+        debug = CFG["project"]["debug"]
 
-        debug = cfg.get("project", {}).get("debug", False)
-        rc = cfg.get("rc_cube", {})
+        if PIPELINE_CFG["mock_rc_cube_cam"]:
+            left_rgb, disp_arr, cam, disp_params = io_utils.load_rc_cube_mock_cam_output(RC_CAM_MOCK_DIR)
 
-        if cfg.get("pipeline", {}).get("mock_rc_cube", False):
-            left_rgb, disp_arr, cam, disp_params = io_utils.load_rc_cube_mock(rc_mock_dir)
-
-            # TODO DEBUG PRINT REMOVE AFTER
-            print("LEFT PARAMS:")
-            print(cam)
-            print("\nDISP PARAMS:")
-            print(disp_params)
+        elif PIPELINE_CFG["mock_rc_cube_full"]:
+            return {
+                "status": "ok",
+                "result_path": RC_FULL_MOCK_DIR,
+                "debug": "USING FULL RC CUBE MOCK OUTPUT",
+            }
 
         else:
             left_rgb, disp_arr, cam, disp_params = client.get_disparity_and_left(
-                left_enabled=rc.get("left_enabled", True),
-                right_enabled=rc.get("right_enabled", False),
-                disparity_enabled=rc.get("disparity_enabled", True),
-                disparity_error_enabled=rc.get("disparity_error_enabled", False),
-                confidence_enabled=rc.get("confidence_enabled", False),
-                mesh_enabled=rc.get("mesh_enabled", False),
-                color=rc.get("color", True),
-                timeout=rc.get("timeout_sec"),
+                left_enabled=RC_CFG["left_enabled"],
+                right_enabled=RC_CFG["right_enabled"],
+                disparity_enabled=RC_CFG["disparity_enabled"],
+                disparity_error_enabled=RC_CFG["disparity_error_enabled"],
+                confidence_enabled=RC_CFG["confidence_enabled"],
+                mesh_enabled=RC_CFG["mesh_enabled"],
+                color=RC_CFG["color"],
+                timeout=RC_CFG["timeout_sec"],
             )
 
         rc_output = io_utils.process_rc_cube_output(
@@ -100,15 +90,19 @@ def fetch_disparity_and_left():
             disp_arr=disp_arr,
             cam=cam,
             disp_params=disp_params,
-            out_dir=out_dir,                  
+            output_npz_path=OUTPUT_NPZ_PATH,
+            output_left_img_path=OUTPUT_LEFT_IMG_PATH,
             debug=debug,
-            debug_base_dir=debug_base_dir,   
+            debug_base_dir=DEBUG_DIR,
+            save_pointcloud_npc_with_timestamp=debug,
         )
+
         return {
             "status": "ok",
-            "result_path": rc_output["rc_out_npz"],
+            "rc_out_npz": rc_output["rc_out_npz"],
+            "left_png_path": rc_output["left_png_path"],
             "debug": rc_output,
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(500, str(e))

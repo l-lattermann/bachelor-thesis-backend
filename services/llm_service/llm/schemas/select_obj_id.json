@@ -1,0 +1,15 @@
+{
+    "type": "object",
+    "properties": {
+        "object_id": {
+            "type": [
+                "integer",
+                "null"
+            ]
+        }
+    },
+    "required": [
+        "object_id"
+    ],
+    "additionalProperties": false
+}

@@ -1,16 +1,9 @@
 import os
 import sys
 import argparse
-import math
 from datetime import datetime
 import numpy as np
-import socket
-import importlib
 import time
-from tqdm import tqdm
-import glob
-import json
-import yaml
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = os.path.dirname(os.path.dirname(BASE_DIR))
@@ -37,10 +30,9 @@ else:
     sys.path.append(os.path.join(BASE_DIR, 'pointnet2',  'utils'))
     
 import provider
-import sample
 import utilities
-from data import PointCloudReader, load_mesh_path_and_scale, preprocess_pc_for_inference, load_filtered_contact_data, load_scene_contacts, load_obj_scales_cats, inverse_transform, center_pc_convert_cam
-from summaries import top_grasp_acc_summaries, build_summary_ops, build_file_writers
+from data import PointCloudReader, load_filtered_contact_data, load_scene_contacts, load_obj_scales_cats, center_pc_convert_cam
+from summaries import build_summary_ops, build_file_writers
 from tf_train_ops import load_labels_and_losses, build_train_op
 from surface_grasp_estimator import GraspEstimator
 

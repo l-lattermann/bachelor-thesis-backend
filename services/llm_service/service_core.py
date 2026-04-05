@@ -1,9 +1,6 @@
 from pathlib import Path
 from time import time
-import os
 import yaml
-import numpy as np
-import cv2
 
 import uois.src.segmentation as segmentation
 from data_io import load_uois_input  
