@@ -67,9 +67,11 @@ def startup() -> None:
     for name, url in services.items():
         wait_for_health(name, url)
 
+    time.sleep(1)
     print("============================")
     print("===     ORCHESTRATOR     ===")
     print("============================")
+
 
 
 @app.get("/health")
@@ -80,12 +82,7 @@ def health() -> dict:
 @app.post("/run_pipeline")
 def run_pipeline(req: PipelineRequest) -> dict:
     step = "init"
-    rc = None
-    sam = None
-    cgn = None
-    llm_obj = None
-    llm_grasp = None
-    obj_id = None
+    rc = sam = cgn = llm_obj = llm_grasp = obj_id = None
 
     try:
         print("[ORCH] Start")
@@ -113,9 +110,12 @@ def run_pipeline(req: PipelineRequest) -> dict:
         t_sam = time.perf_counter() - t0
 
         t_llm_obj = 0.0
+        obj_id = None
+
         if PIPELINE_CFG["use_obj_selection"] and req.object_query:
             step = "llm_obj"
             t0 = time.perf_counter()
+
             llm_obj = post_json(
                 f"{llm_url}/generate",
                 {
@@ -125,16 +125,26 @@ def run_pipeline(req: PipelineRequest) -> dict:
                 },
                 "llm_obj",
             )
+
             t_llm_obj = time.perf_counter() - t0
 
-            resp = llm_obj["response"]
+            resp = llm_obj.get("response", {})
             if isinstance(resp, dict):
                 val = resp.get("object_id")
-                if isinstance(val, int) or val is None:
+                if isinstance(val, int):
                     obj_id = val
+
+            if obj_id is None:
+                return {
+                    "status": "no_object_found",
+                    "message": f"No object_id found for query '{req.object_query}'",
+                }
+        else:
+            obj_id = CFG["contact_graspnet"]["prediction"]["segmap_id"]
 
         step = "cgn"
         t0 = time.perf_counter()
+
         cgn = post_json(
             f"{cgn_url}/inference",
             {
@@ -143,7 +153,16 @@ def run_pipeline(req: PipelineRequest) -> dict:
             },
             "cgn",
         )
+
         t_cgn = time.perf_counter() - t0
+
+        num_grasps = cgn.get("num_grasps", 0)
+
+        if not isinstance(num_grasps, int) or num_grasps == 0:
+            return {
+                "status": "no_grasps_found",
+                "message": f"No grasps found for object_id={obj_id}",
+            }
 
         step = "llm_grasp"
         t0 = time.perf_counter()

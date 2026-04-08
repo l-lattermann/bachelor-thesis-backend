@@ -117,11 +117,8 @@ def _load_npz_inputs(npz_path: str):
     return rgb, depth, K, seg
 
 
-
-
 def run_contact_graspnet(npz_path: str, object_id: Optional[int] = None):
     model, sess = load_model()
-
     pred_cfg = CGN_CFG["prediction"]
 
     rgb, depth, K, seg = _load_npz_inputs(npz_path)
@@ -137,9 +134,25 @@ def run_contact_graspnet(npz_path: str, object_id: Optional[int] = None):
         margin_px=pred_cfg.get("margin_px", 5),
     )
 
-    # if no object_id → ignore segments completely
+    if pc_full is None or not hasattr(pc_full, "__len__") or len(pc_full) == 0:
+        raise ValueError(
+            f"Empty point cloud after extraction. object_id={object_id}, npz_path={npz_path}"
+        )
+
     if object_id is None:
-        pc_segments = []
+        pc_segments = {}
+    else:
+        if not isinstance(pc_segments, dict):
+            raise ValueError(f"Expected pc_segments to be dict, got {type(pc_segments)}")
+
+        if object_id not in pc_segments:
+            raise ValueError(f"object_id {object_id} not found in extracted segments")
+
+        obj_points = pc_segments[object_id]
+        if obj_points is None or len(obj_points) == 0:
+            raise ValueError(f"No 3D points found for object_id {object_id}")
+
+        pc_segments = {object_id: obj_points}
 
     use_local_regions = pred_cfg.get("local_regions", False) and len(pc_segments) > 0
     use_filter_grasps = pred_cfg.get("filter_grasps", False) and len(pc_segments) > 0
@@ -162,5 +175,6 @@ def run_contact_graspnet(npz_path: str, object_id: Optional[int] = None):
         "segmap": seg,
         "rgb": rgb,
         "K": K,
+        "depth": depth,
         "pc_colors": pc_colors,
     }

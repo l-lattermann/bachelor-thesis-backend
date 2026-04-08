@@ -1,14 +1,7 @@
 import numpy as np
-from sklearn.cluster import KMeans
+from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
 
-
-
-def _pairwise_min_distance(point, selected_points):
-    if len(selected_points) == 0:
-        return np.inf
-    dists = np.linalg.norm(selected_points - point[None, :], axis=1)
-    return float(np.min(dists))
 
 
 def _normalize_grasps(grasps):
@@ -61,14 +54,15 @@ def select_top_grasps(
     return selected_grasps, selected_scores, selected_contacts, selected_openings
 
 
-def k_means_clustering(
+def dbscan_clustering(
     grasps,
     scores,
     contacts,
     openings,
     num_grasps,
-    kmeans_n_init=10,
-    kmeans_random_state=0,
+    min_score=0.0,
+    eps=0.8,
+    min_samples=1,
     orientation_weight=0.3,
 ):
     grasps = _normalize_grasps(grasps)
@@ -84,8 +78,16 @@ def k_means_clustering(
             np.array([], dtype=np.float32),
         )
 
-    k = min(num_grasps, len(contacts))
-    if k == 0:
+    original_best_idx = int(np.argmax(scores))
+
+    keep = scores >= float(min_score)
+
+    grasps = grasps[keep]
+    scores = scores[keep]
+    contacts = contacts[keep]
+    openings = openings[keep] if len(openings) > 0 else openings
+
+    if len(grasps) == 0:
         return (
             np.empty((0, 4, 4), dtype=np.float32),
             np.array([], dtype=np.float32),
@@ -93,41 +95,78 @@ def k_means_clustering(
             np.array([], dtype=np.float32),
         )
 
-    if k == 1:
-        selected_idx = np.array([int(np.argmax(scores))], dtype=np.int32)
-    else:
-        approach = grasps[:, :3, 2]
+    best_idx = int(np.argmax(scores))
 
-        X = np.concatenate([
+    approach = grasps[:, :3, 2]
+
+    X = np.concatenate(
+        [
             contacts,
-            orientation_weight * approach
-        ], axis=1)
+            orientation_weight * approach,
+        ],
+        axis=1,
+    )
 
-        X = StandardScaler().fit_transform(X)
+    X = StandardScaler().fit_transform(X)
 
-        kmeans = KMeans(
-            n_clusters=k,
-            init="k-means++",
-            n_init=kmeans_n_init,
-            random_state=kmeans_random_state,
-        )
+    labels = DBSCAN(eps=eps, min_samples=min_samples).fit_predict(X)
 
-        labels = kmeans.fit_predict(X)
+    selected_idx = []
 
-        selected_idx = []
-        for cluster_id in range(k):
-            cluster_indices = np.where(labels == cluster_id)[0]
-            if len(cluster_indices) == 0:
-                continue
-            best_local = cluster_indices[np.argmax(scores[cluster_indices])]
-            selected_idx.append(best_local)
+    unique_labels = [lab for lab in np.unique(labels) if lab != -1]
 
+    for cluster_id in unique_labels:
+        cluster_indices = np.where(labels == cluster_id)[0]
+        if len(cluster_indices) == 0:
+            continue
+
+        best_local = cluster_indices[np.argmax(scores[cluster_indices])]
+        selected_idx.append(best_local)
+
+    if len(selected_idx) == 0:
+        print("CLUSTERING FAILED")
+        selected_idx = np.argsort(scores)[::-1][:num_grasps]
         selected_idx = np.array(selected_idx, dtype=np.int32)
 
-        if len(selected_idx) > 0:
-            selected_idx = selected_idx[np.argsort(scores[selected_idx])[::-1]]
+    else:
+        selected_idx = np.array(selected_idx, dtype=np.int32)
+        selected_idx = selected_idx[np.argsort(scores[selected_idx])[::-1]]
 
-    selected_idx = selected_idx[:num_grasps]
+        if len(selected_idx) > num_grasps:
+            candidate_contacts = contacts[selected_idx]
+
+            chosen = [0]
+            remaining = list(range(1, len(selected_idx)))
+
+            while len(chosen) < num_grasps and remaining:
+                chosen_pts = candidate_contacts[chosen]
+                remaining_pts = candidate_contacts[remaining]
+
+                dists = np.linalg.norm(
+                    remaining_pts[:, None, :] - chosen_pts[None, :, :],
+                    axis=2,
+                )
+
+                min_dists = dists.min(axis=1)
+                best_remaining_pos = int(np.argmax(min_dists))
+
+                chosen.append(remaining[best_remaining_pos])
+                remaining.pop(best_remaining_pos)
+
+            selected_idx = selected_idx[np.array(chosen, dtype=np.int32)]
+
+    if best_idx not in selected_idx:
+        if len(selected_idx) < num_grasps:
+            selected_idx = np.append(selected_idx, best_idx)
+        else:
+            worst_pos = int(np.argmin(scores[selected_idx]))
+            selected_idx[worst_pos] = best_idx
+
+    selected_idx = np.unique(selected_idx)
+    selected_idx = selected_idx[np.argsort(scores[selected_idx])[::-1]]
+
+    if len(selected_idx) > num_grasps:
+        selected_idx = selected_idx[:num_grasps]
 
     selected_grasps = grasps[selected_idx]
     selected_scores = scores[selected_idx]
@@ -141,9 +180,10 @@ def process_contact_graspnet_result(
     result,
     num_grasps,
     top_score_candidates,
-    use_k_means=False,
-    kmeans_n_init=10,
-    kmeans_random_state=0,
+    use_dbscan=False,
+    dbscan_min_score=0.0,
+    dbscan_eps=0.8,
+    dbscan_min_samples=1,
     orientation_weight=1.0,
 ):
     selected_grasps = {}
@@ -157,15 +197,16 @@ def process_contact_graspnet_result(
         contacts_k = np.atleast_2d(result["contact_pts"][key]).astype(np.float32)
         openings_k = _normalize_openings(result["gripper_openings"][key], len(grasps_k))
 
-        if use_k_means:
-            selected_g, selected_s, selected_c, selected_o = k_means_clustering(
+        if use_dbscan:
+            selected_g, selected_s, selected_c, selected_o = dbscan_clustering(
                 grasps=grasps_k,
                 scores=scores_k,
                 contacts=contacts_k,
                 openings=openings_k,
                 num_grasps=num_grasps,
-                kmeans_n_init=kmeans_n_init,
-                kmeans_random_state=kmeans_random_state,
+                min_score=dbscan_min_score,
+                eps=dbscan_eps,
+                min_samples=dbscan_min_samples,
                 orientation_weight=orientation_weight,
             )
         else:

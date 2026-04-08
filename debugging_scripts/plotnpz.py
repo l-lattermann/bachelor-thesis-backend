@@ -5,7 +5,7 @@ import open3d as o3d
 
 
 RAW_PATH = "/home/ubuntu/bachelor-thesis-backend/shared/pipeline_io/rc_cube_output.npz"
-SEG_PATH = "/home/ubuntu/bachelor-thesis-backend/debugging_scripts/sam_output_3d_segmented.npz"
+SEG_PATH = "/home/ubuntu/bachelor-thesis-backend/shared/pipeline_io/sam_segmented_output.npz"
 
 OCID_COMPARE_PATH = "/home/ubuntu/bachelor-thesis-backend/OCID-dataset/ARID20/table/top/seq04/pcd/result_2018-08-21-12-15-27.pcd"
 OCID_NPZ_OUT = "/home/ubuntu/bachelor-thesis-backend/debugging_scripts/OCID_image_0.npz"
@@ -461,18 +461,18 @@ def visualize_xyz_with_mask_colors(path):
     )
 
 # --- LOAD DEBUG CLOUDS ---
-pcd_raw, rgb_raw, _, valid_raw, _ = load_npz_pointcloud(RAW_PATH)
-pcd_seg, _, mask_seg, valid_seg, _ = load_npz_pointcloud(OCID_NPZ_OUT)
+#pcd_raw, rgb_raw, _, valid_raw, _ = load_npz_pointcloud(RAW_PATH)
+#pcd_seg, _, mask_seg, valid_seg, _ = load_npz_pointcloud(OCID_NPZ_OUT)
 #pcd_ocid = load_ocid_pcd(OCID_COMPARE_PATH)
 
 # --- COLOR ---
-pcd_raw = apply_rgb(pcd_raw, rgb_raw, valid_raw)
-pcd_seg = color_mask(pcd_seg, mask_seg, valid_seg)
+#pcd_raw = apply_rgb(pcd_raw, rgb_raw, valid_raw)
+#pcd_seg = color_mask(pcd_seg, mask_seg, valid_seg)
 
 # -- ANALYZE ---
-analyze_uois_sample(RAW_PATH)
+#analyze_uois_sample(RAW_PATH)
 #analyze_uois_sample(SEG_PATH)
-analyze_uois_sample(OCID_NPZ_OUT)
+#analyze_uois_sample(OCID_NPZ_OUT)
 #analyze_uois_sample(OCID_NPZ_SURE_GOOD)
 
 # --- VIS ---
@@ -480,9 +480,9 @@ analyze_uois_sample(OCID_NPZ_OUT)
 #o3d.visualization.draw_geometries([pcd_seg], window_name="SEGMENTED (MASK)")
 #o3d.visualization.draw_geometries([pcd_ocid], window_name="OCID PCD")
 
-visualize_npz_contents(RAW_PATH)
+#visualize_npz_contents(RAW_PATH)
 visualize_npz_contents(SEG_PATH)
 visualize_xyz_with_mask_colors(SEG_PATH)
 #visualize_npz_contents(OCID_NPZ_OUT)
 
-set_labels_zero(RAW_PATH)
+#set_labels_zero(RAW_PATH)

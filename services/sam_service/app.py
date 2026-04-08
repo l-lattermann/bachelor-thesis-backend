@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import yaml
 import os
+import time 
 
 import service_core as sc
 import data_io as io_utils
@@ -64,22 +65,29 @@ def health():
 @app.post("/predict")
 def predict(req: SAMRequest):
     try:
+        t0 = time.perf_counter()
+
         if not os.path.exists(req.npz_path):
             raise HTTPException(404, f"NPZ not found: {req.npz_path}")
-
         if not os.path.exists(req.image_path):
             raise HTTPException(404, f"Image not found: {req.image_path}")
 
+        # --- load ---
+        t1 = time.perf_counter()
         rgb_xyz_aligned, xyz, cam = io_utils.load_rc_cube_npz(req.npz_path)
         left_img = io_utils.load_left_rgb(req.image_path)
+        t2 = time.perf_counter()
 
+        # --- sam ---
         result = sc.run_sam_pipeline(
             image=left_img,
             target_hw=xyz.shape[:2],
             min_area=SAM_CFG["min_area"],
             max_area_ratio=SAM_CFG["max_area_ratio"],
         )
+        t3 = time.perf_counter()
 
+        # --- debug images ---
         io_utils.save_annotated_masks_outline(
             image=left_img,
             masks=result["ordered_masks_fullres"],
@@ -94,7 +102,9 @@ def predict(req: SAMRequest):
             output_path=path,
             show=False,
         )
+        t4 = time.perf_counter()
 
+        # --- npz ---
         io_utils.save_output_npz(
             output_path=OUT_PATH_NPZ,
             rgb=rgb_xyz_aligned,
@@ -102,6 +112,7 @@ def predict(req: SAMRequest):
             seg=result["seg"],
             cam=cam,
         )
+        t5 = time.perf_counter()
 
         return {
             "status": "ok",

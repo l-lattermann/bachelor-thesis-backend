@@ -55,9 +55,9 @@ services:
       - ./shared/pipeline_io:/shared/pipeline_io
       - ./shared/debug:/shared/debug
     environment:
-      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL}
       AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY}
-      AZURE_OPENAI_API_VERSION: ${AZURE_OPENAI_API_VERSION}
+      AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT}
     restart: unless-stopped
 
   orchestrator:

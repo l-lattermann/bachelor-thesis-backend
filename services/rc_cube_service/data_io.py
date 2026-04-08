@@ -88,8 +88,10 @@ def process_rc_cube_output(
     disp_arr,
     cam,
     disp_params,
-    output_npz_path,
-    output_left_img_path,
+    conf=None,
+    conf_thr=32,
+    output_npz_path=None,
+    output_left_img_path=None,
     debug=False,
     debug_base_dir="/shared/debug",
     save_pointcloud_npc_with_timestamp=True,
@@ -102,10 +104,10 @@ def process_rc_cube_output(
         left_rgb=left_rgb,
         cam=cam,
         disp_params=disp_params,
-        conf=None,
+        conf=conf,
+        conf_thr=conf_thr,
     )
 
-    # --- MAIN PIPELINE OUTPUTS ---
     npz_path = output_npz_path
     left_png_pipeline = output_left_img_path
 
@@ -129,14 +131,14 @@ def process_rc_cube_output(
         "left_png_path": left_png_pipeline,
     }
 
-    # --- TIMESTAMPED DEBUG NPZ ---
     debug_npz_path = None
     if save_pointcloud_npc_with_timestamp:
-        os.makedirs(debug_base_dir, exist_ok=True)
+        out_dir = os.path.join(debug_base_dir, "rc_cube", "rc_cube_mock_full_output")
+        os.makedirs(out_dir, exist_ok=True)
 
         timestamp = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
         filename = f"output_{timestamp}.npz"
-        debug_npz_path = os.path.join(debug_base_dir, filename)
+        debug_npz_path = os.path.join(out_dir, filename)
 
         np.savez_compressed(
             debug_npz_path,
@@ -154,7 +156,6 @@ def process_rc_cube_output(
     if debug_npz_path is not None:
         result["debug_npz"] = debug_npz_path
 
-    # --- EXTRA DEBUG ARTIFACTS ---
     if debug:
         os.makedirs(debug_base_dir, exist_ok=True)
 
@@ -256,3 +257,32 @@ def load_rc_cube_mock_cam_output(folder: str):
     }
 
     return left_rgb, disp_arr, cam, disp_params
+
+
+def gen_mock_output_from_npz(rc_full_mock_path, output_npz_path, output_left_img_path):
+    rc_full_mock_path = Path(rc_full_mock_path)
+    output_npz_path = Path(output_npz_path)
+    output_left_img_path = Path(output_left_img_path)
+
+    if not rc_full_mock_path.is_file():
+        raise FileNotFoundError(f"{rc_full_mock_path} is not a file")
+
+    output_npz_path.parent.mkdir(parents=True, exist_ok=True)
+    output_left_img_path.parent.mkdir(parents=True, exist_ok=True)
+
+    data = np.load(rc_full_mock_path, allow_pickle=True)
+
+    if "rgb" not in data:
+        raise KeyError("Key 'rgb' not found in npz")
+
+    rgb = data["rgb"]
+
+    if rgb.dtype != np.uint8:
+        rgb = np.clip(rgb, 0, 255).astype(np.uint8)
+
+    bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+    cv2.imwrite(str(output_left_img_path), bgr)
+
+    np.savez(output_npz_path, **{k: data[k] for k in data.files})
+
+    return str(output_npz_path), str(output_left_img_path)

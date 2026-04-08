@@ -34,8 +34,8 @@ def startup():
     DEBUG_BASE_DIR = PATHS_CFG["output_debug"]
     DEBUG_DIR = os.path.join(DEBUG_BASE_DIR, "rc_cube")
 
-    RC_CAM_MOCK_DIR = PATHS_CFG["rc_mock_cam_input"]
-    RC_FULL_MOCK_DIR = PATHS_CFG["rc_mock_full_input"]
+    RC_CAM_MOCK_DIR = RC_CFG["rc_mock_cam_input"]
+    RC_FULL_MOCK_DIR = RC_CFG["rc_mock_full_input"]
 
     OUTPUT_NPZ_PATH = RC_CFG["output_npz"]
     OUTPUT_LEFT_IMG_PATH = RC_CFG["output_left_img"]
@@ -67,14 +67,21 @@ def fetch_disparity_and_left():
             left_rgb, disp_arr, cam, disp_params = io_utils.load_rc_cube_mock_cam_output(RC_CAM_MOCK_DIR)
 
         elif PIPELINE_CFG["mock_rc_cube_full"]:
+            npz_path, left_path = io_utils.gen_mock_output_from_npz(
+                RC_FULL_MOCK_DIR, 
+                OUTPUT_NPZ_PATH, 
+                OUTPUT_LEFT_IMG_PATH,
+            )
+
             return {
                 "status": "ok",
-                "result_path": RC_FULL_MOCK_DIR,
+                "rc_out_npz": npz_path,
+                "left_png_path": left_path,
                 "debug": "USING FULL RC CUBE MOCK OUTPUT",
             }
 
         else:
-            left_rgb, disp_arr, cam, disp_params = client.get_disparity_and_left(
+            left_rgb, disp_arr, conf_arr, cam, disp_params = client.get_disparity_and_left(
                 left_enabled=RC_CFG["left_enabled"],
                 right_enabled=RC_CFG["right_enabled"],
                 disparity_enabled=RC_CFG["disparity_enabled"],
@@ -90,6 +97,8 @@ def fetch_disparity_and_left():
             disp_arr=disp_arr,
             cam=cam,
             disp_params=disp_params,
+            conf=conf_arr,
+            conf_thr=RC_CFG["conf_threshhold"],
             output_npz_path=OUTPUT_NPZ_PATH,
             output_left_img_path=OUTPUT_LEFT_IMG_PATH,
             debug=debug,

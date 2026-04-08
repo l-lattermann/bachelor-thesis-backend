@@ -12,41 +12,40 @@ network:
 paths:
   output_debug: /shared/debug
   pipeline_file_share: /shared/pipeline_io
-  rc_mock_cam_input: /shared/debug/rc_cube/rc_cube_mock_cam_output
-  rc_mock_full_input: /shared/pipeline_io/rc_cube_output.npz
 
 pipeline:
   mock_rc_cube_cam: false
-  mock_rc_cube_full: false
+  mock_rc_cube_full: true
   use_obj_selection: true
 
 rc_cube:
   output_npz: /shared/pipeline_io/rc_cube_pointcloud.npz
   output_left_img: /shared/pipeline_io/left.png
+  rc_mock_cam_input: /shared/debug/rc_cube/rc_cube_mock_cam_output
+  rc_mock_full_input: /shared/debug/rc_cube/rc_cube_mock_full_output/output_2026-04-05_15-45-32.npz
   timeout_sec: 5.0
   max_message_size_mb: 300
   left_enabled: true
   right_enabled: false
   disparity_enabled: true
   disparity_error_enabled: false
-  confidence_enabled: false
+  confidence_enabled: true
   mesh_enabled: false
   color: true
+  conf_threshhold: 128
 
 sam:
   device: cuda
   checkpoint: /app/checkpoints/sam2.1_l.pt
   output_npz: /shared/pipeline_io/sam_segmented_output.npz
   output_png: /shared/pipeline_io/sam_segmented_output.png
-
   min_area: 100
   max_area_ratio: 0.5
-
-
 
 contact_graspnet:
   checkpoint_dir: /app/contact_graspnet/contact_graspnet/checkpoints/scene_test_2048_bs3_hor_sigma_001
   output_png: /shared/pipeline_io/cgn_annotated_output.png
+  heatmap_dir: /shared/debug/cgn/heatmap
 
   prediction:
     z_min: 0.0
@@ -54,21 +53,25 @@ contact_graspnet:
     filter_grasps: true
     local_regions: true
     forward_passes: 1
-    segmap_id: 4
+    skip_border_objects: True
+    margin_px: 5
+    segmap_id: 4 # Gets used only when object selection is skipped (use_obj_selection: false)
 
   selection:
-    num_grasps: 3
+    num_grasps: 4
     top_score_candidates: 10
     gripper_width: 0.16
-    k_means_clustering: true
-    k_means:
-      kmeans_n_init: 10
-      kmeans_random_state: 0
-      orientation_weight: 0.7
+
+    dbscan_clustering: true # otherwise num_grasps top score candidates are selected 
+    dbscan:
+      min_score: 0.5          # filter weak grasps first
+      eps: 1.5                # cluster radius (after normalization)
+      min_samples: 1          # keep small clusters
+      orientation_weight: 0.3 # balance position vs orientation
 
   gripper_projection:
-    use_default_opening: false
-    default_opening: 0.080
+    draw_grip_opening_bigger: true
+    increase_grip_opening_by: 0.00
     gripper_line_width: 1
     number_line_width: 1
 
@@ -79,6 +82,7 @@ contact_graspnet:
     fallback_cy: null
 
 llm:
-  deployment: gpt-5.3-chat-global-standard
   max_completion_tokens: 1000
+  prompt_path: /app/llm/prompts.yaml
+  schema_path: /app/llm/schemas
 
