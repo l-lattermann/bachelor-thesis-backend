@@ -120,7 +120,7 @@ def run_pipeline(req: PipelineRequest) -> dict:
                 f"{llm_url}/generate",
                 {
                     "prompt_name": "select_obj_id",
-                    "image_path": sam["rgb_annotated_path"],
+                    "full_img_path": sam["rgb_annotated_path"],
                     "prompt_vars": {"object_query": req.object_query},
                 },
                 "llm_obj",
@@ -170,7 +170,8 @@ def run_pipeline(req: PipelineRequest) -> dict:
             f"{llm_url}/generate",
             {
                 "prompt_name": "select_grasp",
-                "image_path": cgn["result_path"],
+                "full_img_path": cgn["annotated_full_size"],
+                "zoomed_img_path": cgn["annotated_cropped"],
             },
             "llm_grasp",
         )
@@ -184,7 +185,8 @@ def run_pipeline(req: PipelineRequest) -> dict:
             "segmented_pointcloud": sam["result_path"],
             "rgb_annotated_img": sam["rgb_annotated_path"],
             "selected_object_id": obj_id,
-            "grasp_annotated_img": cgn["result_path"],
+            "gasp_annotation_full_img": cgn["annotated_full_size"],
+            "gasp_annotation_zoomed_img": cgn["annotated_cropped"],
             "llm_grasp_response": llm_grasp["response"],
             "timings": {
                 "rc": round(t_rc, 4),

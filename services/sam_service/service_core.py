@@ -50,19 +50,49 @@ def touches_border(mask: np.ndarray):
     return mask[0, :].any() or mask[-1, :].any() or mask[:, 0].any() or mask[:, -1].any()
 
 
-def filter_masks(masks, min_area=200, max_area_ratio=0.5):
-    out = []
-       
+def compute_iou(m1, m2):
+    inter = np.logical_and(m1, m2).sum()
+    union = np.logical_or(m1, m2).sum()
+    return inter / union if union > 0 else 0.0
+
+
+def filter_masks(masks, min_area=200, max_area_ratio=0.5, iou_thresh=0.8):
+    filtered = []
+
     for m in masks:
         area = int(m.sum())
+
         if area < min_area:
             continue
         if area / (m.shape[0] * m.shape[1]) > max_area_ratio:
             continue
         if touches_border(m):
             continue
-        out.append(m.astype(np.uint8))
-    return out
+
+        filtered.append(m.astype(np.uint8))
+
+    dedup = []
+    used = [False] * len(filtered)
+
+    order = np.argsort([int(m.sum()) for m in filtered])[::-1]
+
+    for i in order:
+        if used[i]:
+            continue
+
+        m_i = filtered[i]
+        dedup.append(m_i)
+
+        for j in order:
+            if i == j or used[j]:
+                continue
+
+            iou = compute_iou(m_i, filtered[j])
+
+            if iou > iou_thresh:
+                used[j] = True
+
+    return dedup
 
 
 def sort_masks_for_output(masks):

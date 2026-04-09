@@ -177,4 +177,4 @@ def run_contact_graspnet(npz_path: str, object_id: Optional[int] = None):
         "K": K,
         "depth": depth,
         "pc_colors": pc_colors,
-    }
+    } 

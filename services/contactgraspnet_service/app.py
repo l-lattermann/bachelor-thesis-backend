@@ -85,7 +85,7 @@ def inference(req: InferenceRequest):
             orientation_weight=DBSCAN_CFG["orientation_weight"],
         )
 
-        overlay_path = save_projected_grasp_overlay(
+        overlay_paths = save_projected_grasp_overlay(
             rgb=run_result["rgb"],
             K=run_result["K"],
             pred_grasps_cam=proc_result["pred_grasps_cam"],
@@ -101,7 +101,8 @@ def inference(req: InferenceRequest):
             output_path=OUTPUT_PATH,
         )
         return {
-            "result_path": overlay_path,
+            "annotated_full_size": overlay_paths["annotated_full_size"],
+            "annotated_cropped": overlay_paths["annotated_cropped"],
             "heatmap_path": heatmap_path,
             "num_grasps": sum(len(v) for v in proc_result["pred_grasps_cam"].values()),
         }

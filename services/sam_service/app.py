@@ -72,13 +72,11 @@ def predict(req: SAMRequest):
         if not os.path.exists(req.image_path):
             raise HTTPException(404, f"Image not found: {req.image_path}")
 
-        # --- load ---
         t1 = time.perf_counter()
         rgb_xyz_aligned, xyz, cam = io_utils.load_rc_cube_npz(req.npz_path)
         left_img = io_utils.load_left_rgb(req.image_path)
         t2 = time.perf_counter()
 
-        # --- sam ---
         result = sc.run_sam_pipeline(
             image=left_img,
             target_hw=xyz.shape[:2],
@@ -87,12 +85,10 @@ def predict(req: SAMRequest):
         )
         t3 = time.perf_counter()
 
-        # --- debug images ---
         io_utils.save_annotated_masks_outline(
             image=left_img,
             masks=result["ordered_masks_fullres"],
             output_path=OUT_PATH_PNG,
-            show=False,
         )
 
         path = OUT_PATH_PNG + "_raw.png"
@@ -100,11 +96,9 @@ def predict(req: SAMRequest):
             image=left_img,
             masks=result["raw_masks"],
             output_path=path,
-            show=False,
         )
         t4 = time.perf_counter()
 
-        # --- npz ---
         io_utils.save_output_npz(
             output_path=OUT_PATH_NPZ,
             rgb=rgb_xyz_aligned,

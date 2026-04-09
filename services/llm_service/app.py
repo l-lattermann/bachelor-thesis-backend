@@ -22,7 +22,8 @@ MODEL = None
 
 class LLMRequest(BaseModel):
     prompt_name: str
-    image_path: str
+    full_img_path: str | None = None
+    zoomed_img_path: str | None = None
     prompt_vars: dict = Field(default_factory=dict)
 
 
@@ -81,7 +82,20 @@ def generate(req: LLMRequest):
     prompt = prompts[req.prompt_name]
     system = prompt["system"]
     user = prompt.get("user_template", "").format(**req.prompt_vars)
-    image = image_to_data_url(req.image_path)
+
+    user_content = [{"type": "input_text", "text": user}]
+
+    if req.zoomed_img_path:
+        user_content.append({
+            "type": "input_image",
+            "image_url": image_to_data_url(req.zoomed_img_path),
+        })
+
+    if req.full_img_path:
+        user_content.append({
+            "type": "input_image",
+            "image_url": image_to_data_url(req.full_img_path),
+        })
 
     try:
         res = client.responses.create(
@@ -93,10 +107,7 @@ def generate(req: LLMRequest):
                 },
                 {
                     "role": "user",
-                    "content": [
-                        {"type": "input_text", "text": user},
-                        {"type": "input_image", "image_url": image},
-                    ],
+                    "content": user_content,
                 },
             ],
             text={

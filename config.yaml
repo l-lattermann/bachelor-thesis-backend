@@ -65,7 +65,7 @@ contact_graspnet:
     dbscan_clustering: true # otherwise num_grasps top score candidates are selected 
     dbscan:
       min_score: 0.5          # filter weak grasps first
-      eps: 1.5                # cluster radius (after normalization)
+      eps: 1.4                # cluster radius (after normalization)
       min_samples: 1          # keep small clusters
       orientation_weight: 0.3 # balance position vs orientation
 
