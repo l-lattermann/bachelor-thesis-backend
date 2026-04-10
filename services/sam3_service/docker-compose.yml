@@ -27,26 +27,27 @@ services:
     gpus: all
     restart: unless-stopped
 
-  #sam3:
-  #  build: ./services/sam3_service
-  #  ports:
-  #    - "8006:8000"
-  #  volumes:
-  #    - ./services/sam3_service:/app
-  #    - ./shared/pipeline_io:/shared/pipeline_io
-  #    - ./shared/debug:/shared/debug
-  #  environment:
-  #    PYTHONUNBUFFERED: 1
-  #    NVIDIA_VISIBLE_DEVICES: all
-  #    NVIDIA_DRIVER_CAPABILITIES: compute,utility
-  #  deploy:
-  #    resources:
-  #      reservations:
-  #        devices:
-  #          - driver: nvidia
-  #            count: 1
-  #            capabilities: [gpu]
-  #  restart: unless-stopped
+  sam3:
+  build: ./services/sam3_service
+  ports:
+    - "8006:8000"
+  volumes:
+    - ./services/sam3_service:/app
+    - ./services/sam3_service/sam3:/app/sam3
+    - ./shared/pipeline_io:/shared/pipeline_io
+    - ./shared/debug:/shared/debug
+  environment:
+    PYTHONUNBUFFERED: 1
+    NVIDIA_VISIBLE_DEVICES: all
+    NVIDIA_DRIVER_CAPABILITIES: compute,utility
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
+  restart: unless-stopped
 
   contactgraspnet:
     build: ./services/contactgraspnet_service

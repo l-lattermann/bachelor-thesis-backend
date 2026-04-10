@@ -1,0 +1,39 @@
+# Core (must stay compatible)
+numpy>=2.0,<2.1
+scipy==1.14.1
+
+# Packaging fix (CRITICAL for pkg_resources)
+setuptools<82
+wheel
+
+# PyTorch (adjust if needed for your CUDA)
+torch==2.10.0
+torchvision==0.25.0
+
+# Image / visualization
+opencv-python
+matplotlib
+Pillow
+
+# ML / utils
+scikit-learn
+scikit-image
+pandas
+
+# SAM3 dependencies
+ftfy==6.1.1
+iopath
+portalocker
+einops
+
+# Required by SAM3 internals
+pycocotools
+psutil
+
+# Huggingface stack (pulled implicitly but better explicit)
+huggingface_hub
+timm
+regex
+pyyaml
+rich
+typer

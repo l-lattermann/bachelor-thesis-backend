@@ -167,27 +167,6 @@ def save_projected_grasp_overlay(
         u, v, valid = _project_xyz(pts_cam, K)
         return pts_cam, u, v, valid
 
-    def is_visible(px, py, pz, margin=0.005):
-        if px < 0 or px >= W or py < 0 or py >= H:
-            return False
-        z = scene_depth[py, px]
-        return not np.isfinite(z) or pz <= z + margin
-
-    def first_visible_on_finger(base_pt, tip_pt, margin=0.002):
-        u0, v0, z0 = base_pt
-        u1, v1, z1 = tip_pt
-
-        length = int(max(abs(u1 - u0), abs(v1 - v0)))
-        steps = max(length * 2, 2)
-
-        for t in np.linspace(0.0, 1.0, steps):
-            u = (1 - t) * u0 + t * u1
-            v = (1 - t) * v0 + t * v1
-            z = (1 - t) * z0 + t * z1
-            if is_visible(int(round(u)), int(round(v)), z, margin):
-                return u, v, z
-        return None
-
     def get_grasp_color(rgb_img, seg_img, obj_id, idx):
         color_list_bgr = [
             (0, 0, 255),    # red
@@ -219,21 +198,55 @@ def save_projected_grasp_overlay(
         remaining = [color for _, color in dists[1:]]
         return remaining[idx % len(remaining)]
 
-    def draw_line(p0, p1, color_bgr):
+    def draw_line_occlusion(p0, p1, color_bgr, scene_depth, margin=0.002):
         color_rgb = np.array(color_bgr[::-1], dtype=np.float32) / 255.0
         linewidth = max(1.0, float(gripper_line_width) * 0.75)
 
-        ax.plot(
-            [p0[0], p1[0]],
-            [p0[1], p1[1]],
-            color=color_rgb,
-            linewidth=linewidth,
-            solid_capstyle="round",
-            path_effects=[
-                path_effects.Stroke(linewidth=linewidth + 1.2, foreground="black"),
-                path_effects.Normal(),
-            ],
-        )
+        u0, v0, z0 = p0
+        u1, v1, z1 = p1
+
+        length = int(max(abs(u1 - u0), abs(v1 - v0)))
+        steps = max(length * 2, 2)
+
+        visible_segment = []
+        segments = []
+
+        for t in np.linspace(0.0, 1.0, steps):
+            u = (1 - t) * u0 + t * u1
+            v = (1 - t) * v0 + t * v1
+            z = (1 - t) * z0 + t * z1
+
+            px = int(round(u))
+            py = int(round(v))
+
+            visible = False
+            if 0 <= px < W and 0 <= py < H:
+                z_scene = scene_depth[py, px]
+                adaptive_margin = max(margin, 0.01 * z)
+                visible = (not np.isfinite(z_scene)) or (z <= z_scene + adaptive_margin)
+
+            if visible:
+                visible_segment.append((u, v))
+            else:
+                if len(visible_segment) > 1:
+                    segments.append(visible_segment)
+                visible_segment = []
+
+        if len(visible_segment) > 1:
+            segments.append(visible_segment)
+
+        # draw only visible segments
+        for seg in segments:
+            xs = [p[0] for p in seg]
+            ys = [p[1] for p in seg]
+
+            ax.plot(
+                xs,
+                ys,
+                color=color_rgb,
+                linewidth=linewidth,
+                solid_capstyle="round",
+            )
 
     def draw_label(u, v, valid, label, color_bgr, is_top):
         if not (valid[0] and valid[1]):
@@ -273,26 +286,16 @@ def save_projected_grasp_overlay(
     def draw_grasp(grasp_T, opening, color_bgr, label, is_top):
         pts_cam, u, v, valid = project_grasp(grasp_T, opening)
 
-        for i0, i1 in [(0, 1), (1, 2), (4, 5)]:
-            if valid[i0] and valid[i1] and not np.isnan([u[i0], v[i0], u[i1], v[i1]]).any():
-                draw_line(
-                    (u[i0], v[i0], pts_cam[i0, 2]),
-                    (u[i1], v[i1], pts_cam[i1, 2]),
-                    color_bgr,
-                )
-
-        for i0, i1 in [(2, 3), (5, 6)]:
-            if not (valid[i0] and valid[i1]):
-                continue
-            if np.isnan([u[i0], v[i0], u[i1], v[i1]]).any():
-                continue
-
-            start = first_visible_on_finger(
-                (u[i0], v[i0], pts_cam[i0, 2]),
-                (u[i1], v[i1], pts_cam[i1, 2]),
-            )
-            if start is not None:
-                draw_line(start, (u[i1], v[i1], pts_cam[i1, 2]), color_bgr)
+        # draw all lines with pixel-wise occlusion
+        for i0, i1 in [(0, 1), (1, 2), (4, 5), (2, 3), (5, 6)]:
+            if valid[i0] and valid[i1]:
+                if not np.isnan([u[i0], v[i0], u[i1], v[i1]]).any():
+                    draw_line_occlusion(
+                        (u[i0], v[i0], pts_cam[i0, 2]),
+                        (u[i1], v[i1], pts_cam[i1, 2]),
+                        color_bgr,
+                        scene_depth,
+                    )
 
         draw_label(u, v, valid, label, color_bgr, is_top)
 

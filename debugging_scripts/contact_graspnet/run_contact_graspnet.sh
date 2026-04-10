@@ -19,6 +19,6 @@ python contact_graspnet/inference.py \
   --np_path "$NP_PATH" \
   --local_regions \
   --filter_grasps \
-  --segmap_id 1
+  --segmap_id 7
 
 

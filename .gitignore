@@ -12,3 +12,5 @@ debugging_scripts/*
 debugging_scripts/contact_graspnet
 shared/debug/rc_cube
 shared/debug/cgn/heatmap/*
+*.venv
+*venv
