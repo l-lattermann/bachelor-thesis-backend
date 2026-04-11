@@ -1,128 +1,92 @@
-import time
-import cv2
 import numpy as np
 import torch
-from ultralytics import SAM
-
+from huggingface_hub import login
 
 MODEL = None
+PROCESSOR = None
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
+def load_model(
+    hf_token: str = None,
+    device: str = "cuda",
+    confidence_threshold: float = 0.5,
+    warmup: bool = False,
+    warmup_image=None,
+):
+    global MODEL, PROCESSOR, DEVICE
 
-def load_model(checkpoint_path: str, device: str = "cuda", warmup: bool = True):
-    global MODEL
+    if MODEL is not None and PROCESSOR is not None:
+        return
 
-    MODEL = SAM(checkpoint_path).to(device)
+    DEVICE = device
 
-    if warmup:
-        dummy = np.zeros((640, 640, 3), dtype=np.uint8)
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
-        for _ in range(2):
-            _ = MODEL(dummy, verbose=False)
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
+    if hf_token:
+        login(token=hf_token)
+
+    from sam3.model_builder import build_sam3_image_model
+    from sam3.model.sam3_image_processor import Sam3Processor
+
+    MODEL = build_sam3_image_model()
+    MODEL = MODEL.to(DEVICE)
+    MODEL.eval()
+
+    PROCESSOR = Sam3Processor(MODEL, confidence_threshold=confidence_threshold)
+
+    if warmup and warmup_image is not None:
+        _ = generate_masks(warmup_image, "object", confidence_threshold)
         print("warmup done")
 
 
+def _to_numpy(x):
+    if x is None:
+        return None
+    if torch.is_tensor(x):
+        return x.detach().cpu().numpy()
+    return x
 
 
-def generate_masks(image: np.ndarray):
-    global MODEL
-    
-    if MODEL is None:
+def _extract(output: dict):
+    masks = _to_numpy(output.get("masks"))
+    boxes = _to_numpy(output.get("boxes"))
+    scores = _to_numpy(output.get("scores"))
+
+    out_masks = []
+    if masks is not None:
+        for m in masks:
+            if m.ndim == 3:
+                m = m[0]
+            out_masks.append((m > 0.5).astype(np.uint8))
+
+    return out_masks, boxes, scores
+
+
+def generate_masks(image, text_prompt: str, confidence_threshold: float = None):
+    global MODEL, PROCESSOR
+
+    if MODEL is None or PROCESSOR is None:
         raise RuntimeError("Model not loaded")
 
-    results = MODEL(image, verbose=False)
+    if confidence_threshold is not None:
+        PROCESSOR.confidence_threshold = confidence_threshold
 
-    masks = []
-    for r in results:
-        if r.masks is None:
-            continue
-        data = r.masks.data.cpu().numpy()
-        print("masks in result:", len(data))
-        masks.extend((m > 0.5).astype(np.uint8) for m in data)
+    with torch.inference_mode():
+        if DEVICE == "cuda":
+            with torch.autocast(device_type="cuda", dtype=torch.float16):
+                state = PROCESSOR.set_image(image)
+                PROCESSOR.reset_all_prompts(state)
+                output = PROCESSOR.set_text_prompt(state=state, prompt=text_prompt)
+        else:
+            state = PROCESSOR.set_image(image)
+            PROCESSOR.reset_all_prompts(state)
+            output = PROCESSOR.set_text_prompt(state=state, prompt=text_prompt)
 
-    return masks
-
-
-def touches_border(mask: np.ndarray):
-    return mask[0, :].any() or mask[-1, :].any() or mask[:, 0].any() or mask[:, -1].any()
-
-
-def compute_iou(m1, m2):
-    inter = np.logical_and(m1, m2).sum()
-    union = np.logical_or(m1, m2).sum()
-    return inter / union if union > 0 else 0.0
-
-
-def filter_masks(masks, min_area=200, max_area_ratio=0.5, iou_thresh=0.8):
-    filtered = []
-
-    for m in masks:
-        area = int(m.sum())
-
-        if area < min_area:
-            continue
-        if area / (m.shape[0] * m.shape[1]) > max_area_ratio:
-            continue
-        if touches_border(m):
-            continue
-
-        filtered.append(m.astype(np.uint8))
-
-    dedup = []
-    used = [False] * len(filtered)
-
-    order = np.argsort([int(m.sum()) for m in filtered])[::-1]
-
-    for i in order:
-        if used[i]:
-            continue
-
-        m_i = filtered[i]
-        dedup.append(m_i)
-
-        for j in order:
-            if i == j or used[j]:
-                continue
-
-            iou = compute_iou(m_i, filtered[j])
-
-            if iou > iou_thresh:
-                used[j] = True
-
-    return dedup
-
-
-def sort_masks_for_output(masks):
-    return sorted(masks, key=lambda m: int(m.sum()), reverse=True)
-
-
-def resize_masks_to_shape(masks, target_hw):
-    h, w = target_hw
-    return [cv2.resize(m, (w, h), interpolation=cv2.INTER_NEAREST) for m in masks]
-
-
-def masks_to_segmentation(masks, image_shape):
-    h, w = image_shape[:2]
-    seg = np.zeros((h, w), dtype=np.int32)
-    for i, m in enumerate(masks, start=1):
-        seg[m.astype(bool)] = i
-    return seg
-
-
-def run_sam_pipeline(image: np.ndarray, target_hw, min_area=200, max_area_ratio=0.5):
-    raw = generate_masks(image) 
-    filtered = filter_masks(raw, min_area, max_area_ratio)
-    ordered = sort_masks_for_output(filtered)
-    resized = resize_masks_to_shape(ordered, target_hw)
-    seg = masks_to_segmentation(resized, (*target_hw, 3))
+    masks, boxes, scores = _extract(output)
 
     return {
-        "raw_masks": raw,
-        "filtered_masks": filtered,
-        "ordered_masks_fullres": ordered,
-        "ordered_masks_resized": resized,
-        "seg": seg,
+        "state": state,
+        "masks": masks,
+        "boxes": boxes,
+        "scores": scores,
+        "mask_count": len(masks),
     }

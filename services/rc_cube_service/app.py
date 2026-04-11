@@ -27,7 +27,7 @@ def startup():
     PIPELINE_CFG = CFG["pipeline"]
     PATHS_CFG = CFG["paths"]
 
-    ip = os.environ["RC_CUBE_IP"]
+    ip = os.environ["RC_CUBE_SOCKET_ADRESS"]
 
     OUT_DIR = PATHS_CFG["pipeline_file_share"]
 

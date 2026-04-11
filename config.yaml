@@ -5,7 +5,7 @@ project:
 network:
   orchestrator_url: http://orchestrator:8000
   rc_cube_service_url: http://rc_cube:8000
-  sam_service_url: http://sam:8000
+  sam2_service_url: http://sam2:8000
   contact_graspnet_service_url: http://contactgraspnet:8000
   llm_service_url: http://llm:8000
 
@@ -15,7 +15,7 @@ paths:
 
 pipeline:
   mock_rc_cube_cam: false
-  mock_rc_cube_full: true
+  mock_rc_cube_full: false
   use_obj_selection: true
 
 rc_cube:
@@ -34,13 +34,19 @@ rc_cube:
   color: true
   conf_threshhold: 128
 
-sam:
+sam2:
   device: cuda
   checkpoint: /app/checkpoints/sam2.1_l.pt
   output_npz: /shared/pipeline_io/sam_segmented_output.npz
   output_png: /shared/pipeline_io/sam_segmented_output.png
   min_area: 100
   max_area_ratio: 0.5
+
+sam3:
+  device: "cuda"
+  confidence_threshold: 0.5
+  output_npz: "/shared/pipeline_io/sam3_output.npz"
+  output_png: "/shared/debug/sam/sam3_output.png"
 
 contact_graspnet:
   checkpoint_dir: /app/contact_graspnet/contact_graspnet/checkpoints/scene_test_2048_bs3_hor_sigma_001

@@ -9,15 +9,15 @@ services:
       - ./shared/debug:/shared/debug
       - ./config.yaml:/app/config.yaml:ro
     environment:
-      RC_CUBE_IP: ${RC_CUBE_IP}
+      RC_CUBE_SOCKET_ADRESS: ${RC_CUBE_SOCKET_ADRESS}
     restart: unless-stopped
 
-  sam:
-    build: ./services/sam_service
+  sam2:
+    build: ./services/sam2_service
     ports:
       - "8005:8000"
     volumes:
-      - ./services/sam_service:/app
+      - ./services/sam2_service:/app
       - ./shared/pipeline_io:/shared/pipeline_io
       - ./shared/debug:/shared/debug
       - ./config.yaml:/app/config.yaml:ro
@@ -30,22 +30,17 @@ services:
   #sam3:
   #  build: ./services/sam3_service
   #  ports:
-  #    - "8006:8000"
+  #    - "8005:8000"
   #  volumes:
   #    - ./services/sam3_service:/app
   #    - ./shared/pipeline_io:/shared/pipeline_io
   #    - ./shared/debug:/shared/debug
+  #    - ./config.yaml:/app/config.yaml:ro
   #  environment:
-  #    PYTHONUNBUFFERED: 1
-  #    NVIDIA_VISIBLE_DEVICES: all
-  #    NVIDIA_DRIVER_CAPABILITIES: compute,utility
-  #  deploy:
-  #    resources:
-  #      reservations:
-  #        devices:
-  #          - driver: nvidia
-  #            count: 1
-  #            capabilities: [gpu]
+  #    HF_TOKEN: ${HF_TOKEN}
+  #    NVIDIA_VISIBLE_DEVICES: "all"
+  #    NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+  #  gpus: all
   #  restart: unless-stopped
 
   contactgraspnet:
@@ -87,7 +82,7 @@ services:
       - "8000:8000"
     depends_on:
       - rc_cube
-      - sam
+      - sam2
       - contactgraspnet
       - llm
     volumes:

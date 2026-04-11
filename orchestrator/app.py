@@ -59,7 +59,7 @@ def startup() -> None:
 
     services = {
         "rc_cube": NET["rc_cube_service_url"],
-        "sam": NET["sam_service_url"],
+        "sam": NET["sam2_service_url"],
         "cgn": NET["contact_graspnet_service_url"],
         "llm": NET["llm_service_url"],
     }
@@ -88,7 +88,7 @@ def run_pipeline(req: PipelineRequest) -> dict:
         print("[ORCH] Start")
 
         rc_url = NET["rc_cube_service_url"]
-        sam_url = NET["sam_service_url"]
+        sam_url = NET["sam2_service_url"]
         cgn_url = NET["contact_graspnet_service_url"]
         llm_url = NET["llm_service_url"]
 
