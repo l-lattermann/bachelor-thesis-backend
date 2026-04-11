@@ -1,6 +1,7 @@
 from pathlib import Path
 import time
 import traceback
+from typing import Optional
 
 import requests
 import yaml
@@ -18,7 +19,7 @@ PIPELINE_CFG = None
 
 
 class PipelineRequest(BaseModel):
-    object_query: str
+    object_query: Optional[str] = None
 
 
 def wait_for_health(name: str, url: str, retries: int = 120, delay: float = 2.0) -> None:
@@ -58,7 +59,7 @@ def startup() -> None:
 
     services = {
         "rc_cube": NET["rc_cube_service_url"],
-        "sam3": NET["sam3_service_url"],
+        "sam": NET["sam2_service_url"],
         "cgn": NET["contact_graspnet_service_url"],
         "llm": NET["llm_service_url"],
     }
@@ -72,6 +73,7 @@ def startup() -> None:
     print("============================")
 
 
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
@@ -80,18 +82,13 @@ def health() -> dict:
 @app.post("/run_pipeline")
 def run_pipeline(req: PipelineRequest) -> dict:
     step = "init"
-    rc = sam = cgn = llm_obj = llm_grasp = None
-    selected_mask_label = None
+    rc = sam = cgn = llm_obj = llm_grasp = obj_id = None
 
     try:
         print("[ORCH] Start")
 
-        object_query = req.object_query.strip()
-        if not object_query:
-            raise HTTPException(status_code=400, detail="object_query must not be empty")
-
         rc_url = NET["rc_cube_service_url"]
-        sam_url = NET["sam3_service_url"]
+        sam_url = NET["sam2_service_url"]
         cgn_url = NET["contact_graspnet_service_url"]
         llm_url = NET["llm_service_url"]
 
@@ -100,84 +97,71 @@ def run_pipeline(req: PipelineRequest) -> dict:
         rc = post_json(f"{rc_url}/fetch_disparity_and_left", {}, "rc")
         t_rc = time.perf_counter() - t0
 
-        step = "sam3"
+        step = "sam"
         t0 = time.perf_counter()
         sam = post_json(
             f"{sam_url}/predict",
             {
                 "npz_path": rc["rc_out_npz"],
                 "image_path": rc["left_png_path"],
-                "text_prompt": object_query,
             },
-            "sam3",
+            "sam",
         )
         t_sam = time.perf_counter() - t0
 
-        mask_count = sam.get("mask_count", 0)
         t_llm_obj = 0.0
+        obj_id = None
 
-        if not isinstance(mask_count, int) or mask_count == 0:
-            return {
-                "status": "no_object_found",
-                "message": f"No masks found for query '{object_query}'",
-                "raw_pointcloud": rc["rc_out_npz"],
-                "segmented_pointcloud": sam.get("result_path"),
-                "rgb_annotated_img": sam.get("rgb_annotated_path"),
-            }
-
-        if mask_count == 1:
-            selected_mask_label = 1
-        else:
-            print(f"[ORCH] OBJECT QUERY IS AMBIGUOUS: '{object_query}'")
-            print("[ORCH] CALLING LLM TO RESOLVE MASK LABEL")
-
+        if PIPELINE_CFG["use_obj_selection"] and req.object_query:
             step = "llm_obj"
             t0 = time.perf_counter()
+
             llm_obj = post_json(
                 f"{llm_url}/generate",
                 {
                     "prompt_name": "select_obj_id",
                     "full_img_path": sam["rgb_annotated_path"],
-                    "prompt_vars": {"object_query": object_query},
+                    "prompt_vars": {"object_query": req.object_query},
                 },
                 "llm_obj",
             )
+
             t_llm_obj = time.perf_counter() - t0
 
             resp = llm_obj.get("response", {})
             if isinstance(resp, dict):
                 val = resp.get("object_id")
                 if isinstance(val, int):
-                    selected_mask_label = val
+                    obj_id = val
 
-            if selected_mask_label is None:
+            if obj_id is None:
                 return {
                     "status": "no_object_found",
-                    "message": f"Could not resolve mask label for query '{object_query}'",
-                    "mask_count": mask_count,
-                    "rgb_annotated_img": sam.get("rgb_annotated_path"),
+                    "message": f"No object_id found for query '{req.object_query}'",
                 }
+        else:
+            obj_id = CFG["contact_graspnet"]["prediction"]["segmap_id"]
 
         step = "cgn"
         t0 = time.perf_counter()
+
         cgn = post_json(
             f"{cgn_url}/inference",
             {
                 "npz_path": sam["result_path"],
-                "object_id": selected_mask_label,
+                "object_id": obj_id,
             },
             "cgn",
         )
+
         t_cgn = time.perf_counter() - t0
 
         num_grasps = cgn.get("num_grasps", 0)
+
         if not isinstance(num_grasps, int) or num_grasps == 0:
             return {
                 "status": "no_grasps_found",
-                "message": f"No grasps found for object_id={selected_mask_label}",
-                "selected_object_id": selected_mask_label,
-                "segmented_pointcloud": sam["result_path"],
-                "rgb_annotated_img": sam["rgb_annotated_path"],
+                "message": f"No grasps found for object_id={obj_id}",
             }
 
         step = "llm_grasp"
@@ -195,47 +179,32 @@ def run_pipeline(req: PipelineRequest) -> dict:
 
         print("[ORCH] Done")
 
-        total_time = t_rc + t_sam + t_llm_obj + t_cgn + t_llm_grasp
-
         response = {
             "status": "ok",
+            "raw_pointcloud": rc["rc_out_npz"],
+            "segmented_pointcloud": sam["result_path"],
+            "rgb_annotated_img": sam["rgb_annotated_path"],
+            "selected_object_id": obj_id,
+            "grasp_annotation_full_img": cgn["annotated_full_size"],
+            "grasp_annotation_zoomed_img": cgn["annotated_cropped"],
+            "llm_grasp_response": llm_grasp["response"],
+            "timings": {
+                "rc": round(t_rc, 4),
+                "sam": round(t_sam, 4),
+                "llm_obj": round(t_llm_obj, 4),
+                "cgn": round(t_cgn, 4),
+                "llm_grasp": round(t_llm_grasp, 4),
+            },
         }
 
         if CFG["project"]["debug"]:
             response["debug"] = {
                 "rc_cube": rc,
-                "sam3": sam,
+                "sam": sam,
                 "cgn": cgn,
                 "llm_obj": llm_obj,
                 "llm_grasp": llm_grasp,
             }
-
-        response.update({
-            "paths": {
-                "raw_pointcloud": rc["rc_out_npz"],
-                "segmented_pointcloud": sam["result_path"],
-                "segmentation_image": sam["rgb_annotated_path"],
-                "grasp_full_image": cgn["annotated_full_size"],
-                "grasp_zoomed_image": cgn["annotated_cropped"],
-            },
-            "timings_sec": {
-                "total": round(total_time, 4),
-                "rc": round(t_rc, 4),
-                "sam3": round(t_sam, 4),
-                "llm_object_selection": round(t_llm_obj, 4),
-                "cgn": round(t_cgn, 4),
-                "llm_grasp_selection": round(t_llm_grasp, 4),
-            },
-            "reasoning": {
-                "query": object_query,
-                "ambiguous_scene": mask_count > 1,
-                "mask_count": mask_count,
-                "selected_mask_label": selected_mask_label,
-                "object_selection_used_llm": mask_count > 1,
-                "grasp_candidates_after_cgn": num_grasps,
-            },
-            "result": llm_grasp["response"],
-        })
 
         return response
 
@@ -252,11 +221,11 @@ def run_pipeline(req: PipelineRequest) -> dict:
                 "traceback": traceback.format_exc(),
                 "context": {
                     "rc": rc,
-                    "sam3": sam,
+                    "sam": sam,
                     "cgn": cgn,
                     "llm_obj": llm_obj,
                     "llm_grasp": llm_grasp,
-                    "selected_object_id": selected_mask_label,
+                    "object_id": obj_id,
                 },
             },
         )

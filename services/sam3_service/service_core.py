@@ -51,12 +51,12 @@ def _extract(output: dict):
     boxes = _to_numpy(output.get("boxes"))
     scores = _to_numpy(output.get("scores"))
 
-    out_masks = []
-    if masks is not None:
-        for m in masks:
-            if m.ndim == 3:
-                m = m[0]
-            out_masks.append((m > 0.5).astype(np.uint8))
+    if masks is None:
+        return [], boxes, scores
+
+    masks = np.asarray(masks)[:, 0, ...]  # (N,1,H,W) -> (N,H,W)
+
+    out_masks = [(m > 0.5).astype(np.uint8) for m in masks]
 
     return out_masks, boxes, scores
 

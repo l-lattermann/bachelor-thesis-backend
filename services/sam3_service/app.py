@@ -73,7 +73,7 @@ def predict(req: SAMRequest):
             confidence_threshold=SAM_CFG["confidence_threshold"],
         )
 
-        seg = io_utils.masks_to_segmentation(result["masks"], image.shape)
+        seg = io_utils.masks_to_segmentation(result["masks"], image)
 
         io_utils.save_output_npz(
             output_path=OUT_PATH_NPZ,
@@ -83,18 +83,22 @@ def predict(req: SAMRequest):
             cam=cam,
         )
 
-        io_utils.save_debug_plot(
+        io_utils.save_annotated_png(
             image=image,
-            state=result["state"],
+            masks=result["masks"],
+            boxes=result["boxes"],
+            scores=result["scores"],
             output_path=OUT_PATH_PNG,
+            pad_bb=SAM_CFG["pad_bb"],
+            label_size=SAM_CFG["label_size"],
         )
-
+        
         return {
             "status": "ok",
             "result_path": OUT_PATH_NPZ,
             "rgb_annotated_path": OUT_PATH_PNG,
             "mask_count": result["mask_count"],
-            "boxes": result["boxes"].tolist() if result["boxes"] is not None else [],
+            "box_count": int(result["boxes"].shape[0]) if result["boxes"] is not None else 0,
             "scores": result["scores"].tolist() if result["scores"] is not None else [],
         }
 

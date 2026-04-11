@@ -1,6 +1,13 @@
-fastapi 
-uvicorn 
-requests 
-plyfile 
+# Web
+fastapi
+uvicorn
+
+# Core
+requests
 pyyaml
+
+# Data
 scikit-learn==1.0.2
+
+# Point cloud
+plyfile

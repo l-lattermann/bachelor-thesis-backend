@@ -1,36 +1,40 @@
-# Core (must stay compatible)
+# Core
 numpy>=2.0,<2.1
 scipy==1.14.1
 
-# Packaging fix (CRITICAL for pkg_resources)
+# Packaging
 setuptools<82
 wheel
 
-# PyTorch (adjust if needed for your CUDA)
+# Web
+fastapi
+uvicorn[standard]
+pydantic
+requests
+
+# Torch
 torch==2.10.0
 torchvision==0.25.0
 
-# Image / visualization
-opencv-python
+# Vision
+opencv-python-headless
 matplotlib
 Pillow
 
-# ML / utils
+# ML
 scikit-learn
 scikit-image
 pandas
 
-# SAM3 dependencies
+# SAM3
 ftfy==6.1.1
 iopath
 portalocker
 einops
-
-# Required by SAM3 internals
 pycocotools
 psutil
 
-# Huggingface stack (pulled implicitly but better explicit)
+# HF / utils
 huggingface_hub
 timm
 regex

@@ -1,0 +1,22 @@
+sam2:
+  device: cuda
+  checkpoint: /app/checkpoints/sam2.1_l.pt
+  output_npz: /shared/pipeline_io/sam_segmented_output.npz
+  output_png: /shared/pipeline_io/sam_segmented_output.png
+  min_area: 100
+  max_area_ratio: 0.5
+
+  #sam2:
+  #  build: ./services/sam2_service
+  #  ports:
+  #    - "8005:8000"
+  #  volumes:
+  #    - ./services/sam2_service:/app
+  #    - ./shared/pipeline_io:/shared/pipeline_io
+  #    - ./shared/debug:/shared/debug
+  #    - ./config.yaml:/app/config.yaml:ro
+  #  environment:
+  #    NVIDIA_VISIBLE_DEVICES: "all"
+  #    NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+  #  gpus: all
+  #  restart: unless-stopped

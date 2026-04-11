@@ -133,7 +133,7 @@ def process_rc_cube_output(
 
     debug_npz_path = None
     if save_pointcloud_npc_with_timestamp:
-        out_dir = os.path.join(debug_base_dir, "rc_cube", "rc_cube_mock_full_output")
+        out_dir = os.path.join(debug_base_dir, "rc_cube_mock_full_output")
         os.makedirs(out_dir, exist_ok=True)
 
         timestamp = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())

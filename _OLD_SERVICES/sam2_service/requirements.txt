@@ -1,18 +1,14 @@
 # Web
 fastapi
 uvicorn[standard]
+pydantic
 
 # Core
-numpy==1.26.4
+numpy
 pyyaml
 
 # Vision
 opencv-python-headless
-pillow
 
-# Point cloud
-plyfile
-
-# RPC
-grpcio>=1.76.0
-protobuf>=6.31.1
+# Models
+ultralytics>=8.3.0

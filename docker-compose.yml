@@ -1,8 +1,24 @@
 services:
+  orchestrator:
+    build: ./orchestrator
+    ports:
+      - "8000:8000"
+    depends_on:
+      - rc_cube
+      - sam3
+      - contactgraspnet
+      - llm
+    volumes:
+      - ./orchestrator:/app
+      - ./shared/pipeline_io:/shared/pipeline_io
+      - ./shared/debug:/shared/debug
+      - ./config.yaml:/app/config.yaml:ro
+    restart: unless-stopped
+
   rc_cube:
     build: ./services/rc_cube_service
     ports:
-      - "8003:8000"
+      - "8001:8000"
     volumes:
       - ./services/rc_cube_service:/app
       - ./shared/pipeline_io:/shared/pipeline_io
@@ -12,41 +28,28 @@ services:
       RC_CUBE_SOCKET_ADRESS: ${RC_CUBE_SOCKET_ADRESS}
     restart: unless-stopped
 
-  sam2:
-    build: ./services/sam2_service
+  sam3:
+    build: ./services/sam3_service
     ports:
-      - "8005:8000"
+      - "8002:8000"
     volumes:
-      - ./services/sam2_service:/app
+      - ./services/sam3_service/app.py:/app/app.py
+      - ./services/sam3_service/service_core.py:/app/service_core.py
+      - ./services/sam3_service/data_io.py:/app/data_io.py
+      - ./config.yaml:/app/config.yaml:ro
       - ./shared/pipeline_io:/shared/pipeline_io
       - ./shared/debug:/shared/debug
-      - ./config.yaml:/app/config.yaml:ro
     environment:
+      HF_TOKEN: ${HF_TOKEN}
       NVIDIA_VISIBLE_DEVICES: "all"
       NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
     gpus: all
     restart: unless-stopped
-
-  #sam3:
-  #  build: ./services/sam3_service
-  #  ports:
-  #    - "8005:8000"
-  #  volumes:
-  #    - ./services/sam3_service:/app
-  #    - ./shared/pipeline_io:/shared/pipeline_io
-  #    - ./shared/debug:/shared/debug
-  #    - ./config.yaml:/app/config.yaml:ro
-  #  environment:
-  #    HF_TOKEN: ${HF_TOKEN}
-  #    NVIDIA_VISIBLE_DEVICES: "all"
-  #    NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
-  #  gpus: all
-  #  restart: unless-stopped
-
+    
   contactgraspnet:
     build: ./services/contactgraspnet_service
     ports:
-      - "8002:8000"
+      - "8003:8000"
     volumes:
       - ./services/contactgraspnet_service:/app
       - ./shared/pipeline_io:/shared/pipeline_io
@@ -76,18 +79,3 @@ services:
       AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT}
     restart: unless-stopped
 
-  orchestrator:
-    build: ./orchestrator
-    ports:
-      - "8000:8000"
-    depends_on:
-      - rc_cube
-      - sam2
-      - contactgraspnet
-      - llm
-    volumes:
-      - ./orchestrator:/app
-      - ./shared/pipeline_io:/shared/pipeline_io
-      - ./shared/debug:/shared/debug
-      - ./config.yaml:/app/config.yaml:ro
-    restart: unless-stopped

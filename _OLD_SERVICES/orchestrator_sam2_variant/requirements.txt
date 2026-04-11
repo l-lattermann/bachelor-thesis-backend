@@ -1,10 +1,4 @@
-# Web
 fastapi==0.115.12
 uvicorn[standard]==0.34.0
 pydantic==2.11.3
-
-# Core
-PyYAML==6.0.2
-
-# LLM
-openai==1.75.0
+requests==2.32.3
