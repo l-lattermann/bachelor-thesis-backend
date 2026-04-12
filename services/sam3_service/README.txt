@@ -7,7 +7,7 @@ curl -X POST http://localhost:8002/predict \
     "npz_path": "/shared/pipeline_io/rc_cube_pointcloud.npz",
     "image_path": "/shared/pipeline_io/left.png",
     "text_prompt": "red box"
-  }'
+  }' | jq
 
 Input:
 - npz_path: RC Cube NPZ containing rgb, xyz and camera parameters

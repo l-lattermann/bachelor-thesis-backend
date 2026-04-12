@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import traceback
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -20,9 +21,9 @@ OUT_PATH_PNG = None
 
 
 class SAMRequest(BaseModel):
+    text_prompt: str
     npz_path: str
     image_path: str
-    text_prompt: str
 
 
 @app.on_event("startup")
@@ -59,6 +60,8 @@ def health():
 @app.post("/predict")
 def predict(req: SAMRequest):
     try:
+        if not req.text_prompt:
+            raise HTTPException(404, "No Textpromt")
         if not os.path.exists(req.npz_path):
             raise HTTPException(404, f"NPZ not found: {req.npz_path}")
         if not os.path.exists(req.image_path):
@@ -105,4 +108,11 @@ def predict(req: SAMRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(500, str(e))
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": str(e),
+                "type": type(e).__name__,
+                "traceback": traceback.format_exc(),
+            },
+        )

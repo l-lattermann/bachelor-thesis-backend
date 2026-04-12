@@ -154,7 +154,7 @@ def process_rc_cube_output(
         )
 
     if debug_npz_path is not None:
-        result["debug_npz"] = debug_npz_path
+        result["sel_grasps"] = debug_npz_path
 
     if debug:
         os.makedirs(debug_base_dir, exist_ok=True)
@@ -216,6 +216,7 @@ def load_rc_cube_mock_cam_output(folder: str):
 
     left_img_path = next(folder.glob("*_left_*.png"))
     disp_img_path = next(folder.glob("*_disparity_*.png"))
+    conf_img_path = next(folder.glob("*_confidence_*.png"))
     left_param_path = next(folder.glob("*_left_*_param.txt"))
     disp_param_path = next(folder.glob("*_disparity_*_param.txt"))
 
@@ -223,6 +224,7 @@ def load_rc_cube_mock_cam_output(folder: str):
     left_rgb = cv2.cvtColor(left_rgb, cv2.COLOR_BGR2RGB)
 
     disp_arr = cv2.imread(str(disp_img_path), cv2.IMREAD_UNCHANGED)
+    conf_arr = cv2.imread(str(conf_img_path), cv2.IMREAD_UNCHANGED)
 
     def parse_param_file(path):
         data = {}
@@ -256,7 +258,7 @@ def load_rc_cube_mock_cam_output(folder: str):
         "encoding": "mono16",
     }
 
-    return left_rgb, disp_arr, cam, disp_params
+    return left_rgb, disp_arr, conf_arr, cam, disp_params
 
 
 def gen_mock_output_from_npz(rc_full_mock_path, output_npz_path, output_left_img_path):

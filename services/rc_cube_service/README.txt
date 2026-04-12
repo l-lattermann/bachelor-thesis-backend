@@ -1,11 +1,11 @@
 RC CUBE SERVICE
 
 Test Request:
-curl -X POST http://localhost:8001/fetch_disparity_and_left
+curl -X POST http://localhost:8001/fetch_disparity_and_left  | jq
 
 Input:
 - no request body
-- uses RC_CUBE_SOCKET_ADRESS from environment
+- uses RC_CUBE_SOCKET_ADDRESS from environment
 - alternatively mock modes from config.yaml
 
 Output:

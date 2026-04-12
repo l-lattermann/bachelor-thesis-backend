@@ -25,7 +25,7 @@ services:
       - ./shared/debug:/shared/debug
       - ./config.yaml:/app/config.yaml:ro
     environment:
-      RC_CUBE_SOCKET_ADRESS: ${RC_CUBE_SOCKET_ADRESS}
+      RC_CUBE_SOCKET_ADDRESS: ${RC_CUBE_SOCKET_ADDRESS}
     restart: unless-stopped
 
   sam3:
@@ -79,3 +79,17 @@ services:
       AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT}
     restart: unless-stopped
 
+  render_service:
+    build: ./services/render_service
+    ports:
+      - "8005:8000"
+    volumes:
+      - ./services/render_service:/app
+      - ./shared/pipeline_io:/shared/pipeline_io
+      - ./shared/debug:/shared/debug
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      PYTHONUNBUFFERED: "1"
+      EGL_PLATFORM: "surfaceless"
+      XDG_RUNTIME_DIR: "/tmp/runtime-root"
+    restart: unless-stopped

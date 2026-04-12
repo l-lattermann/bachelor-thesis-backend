@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 import yaml
 import os
+import traceback
 
 from service_core import RcCubeGrpcClient
 import data_io as io_utils
@@ -27,7 +28,7 @@ def startup():
     PIPELINE_CFG = CFG["pipeline"]
     PATHS_CFG = CFG["paths"]
 
-    ip = os.environ["RC_CUBE_SOCKET_ADRESS"]
+    ip = os.environ["RC_CUBE_SOCKET_ADDRESS"]
 
     OUT_DIR = PATHS_CFG["pipeline_file_share"]
 
@@ -64,7 +65,7 @@ def fetch_disparity_and_left():
         debug = CFG["project"]["debug"]
 
         if PIPELINE_CFG["mock_rc_cube_cam"]:
-            left_rgb, disp_arr, cam, disp_params = io_utils.load_rc_cube_mock_cam_output(RC_CAM_MOCK_DIR)
+            left_rgb, disp_arr, conf_arr, cam, disp_params = io_utils.load_rc_cube_mock_cam_output(RC_CAM_MOCK_DIR)
 
         elif PIPELINE_CFG["mock_rc_cube_full"]:
             npz_path, left_path = io_utils.gen_mock_output_from_npz(
@@ -114,4 +115,11 @@ def fetch_disparity_and_left():
         }
 
     except Exception as e:
-        raise HTTPException(500, str(e))
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": str(e),
+                "type": type(e).__name__,
+                "traceback": traceback.format_exc(),
+            },
+        )

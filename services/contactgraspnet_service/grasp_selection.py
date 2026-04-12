@@ -1,3 +1,4 @@
+from pathlib import Path
 import numpy as np
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
@@ -229,3 +230,30 @@ def process_contact_graspnet_result(
     result["gripper_openings"] = selected_openings
 
     return result
+
+
+def save_selected_cgn_output(
+    output_path,
+    pred_grasps_cam,
+    scores,
+    gripper_openings,
+    pc_full,
+    segmap,
+    rgb,
+    pc_colors,
+):
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    np.savez(
+        output_path,
+        pred_grasps_cam=np.array(pred_grasps_cam, dtype=object),
+        scores=np.array(scores, dtype=object),
+        gripper_openings=gripper_openings,
+        pc_full=pc_full,
+        segmap=segmap,
+        rgb=rgb,
+        pc_colors=pc_colors,
+    )
+
+    return str(output_path)

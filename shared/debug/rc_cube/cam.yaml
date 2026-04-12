@@ -1,0 +1,7 @@
+camera_intrinsics:
+  fx: 552.1849975585938
+  fy: 552.1849975585938
+  cx: 320.0
+  cy: 240.0
+  width: 640
+  height: 480

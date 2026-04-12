@@ -1,12 +1,13 @@
 project:
   name: bachelor_thesis_pipeline
-  debug: true
+  debug: true                        # enable verbose logging and debug artifacts
 
 network:
   orchestrator_url: http://orchestrator:8000
   rc_cube_service_url: http://rc_cube:8000
   sam3_service_url: http://sam3:8000
   contact_graspnet_service_url: http://contactgraspnet:8000
+  render_service_url: http://render_service:8000
   llm_service_url: http://llm:8000
 
 paths:
@@ -14,75 +15,113 @@ paths:
   pipeline_file_share: /shared/pipeline_io
 
 pipeline:
-  mock_rc_cube_cam: false
-  mock_rc_cube_full: false
-  use_obj_selection: true
+  mock_rc_cube_cam: true    # use mocked RC Cube camera export instead of live camera fetch
+  mock_rc_cube_full: false  # use full mocked RC Cube NPZ instead of partial camera mock
+  use_obj_selection: true   # enable object selection before grasp generation
 
 rc_cube:
   output_npz: /shared/pipeline_io/rc_cube_pointcloud.npz
   output_left_img: /shared/pipeline_io/left.png
-  rc_mock_cam_input: /shared/debug/rc_cube/rc_cube_mock_cam_output
-  rc_mock_full_input: /shared/debug/rc_cube/rc_cube_mock_full_output/output_2026-04-05_15-45-32.npz
-  timeout_sec: 5.0
-  max_message_size_mb: 300
-  left_enabled: true
-  right_enabled: false
-  disparity_enabled: true
-  disparity_error_enabled: false
-  confidence_enabled: true
-  mesh_enabled: false
-  color: true
-  conf_threshhold: 128
+  rc_mock_cam_input: /shared/debug/rc_cube/rc_cube_mock_cam_output/snus_und_rote_kistet_objectrennung_funktioniert_nicht
+  rc_mock_full_input: /shared/debug/rc_cube/rc_cube_mock_full_output/output_2026-04-11_13-23-15.npz
+
+  timeout_sec: 5.0                # request timeout for RC Cube communication in seconds
+  max_message_size_mb: 300        # maximum allowed message payload size in MB
+  left_enabled: true              # request left camera image
+  right_enabled: false            # request right camera image
+  disparity_enabled: true         # request disparity map
+  disparity_error_enabled: false  # request disparity error map
+  confidence_enabled: true        # request disparity confidence map
+  mesh_enabled: false             # request RC Cube mesh output
+  color: true                     # fetch color image instead of grayscale
+  conf_threshhold: 64             # minimum confidence value kept from disparity confidence map
 
 sam3:
-  device: "cuda"
-  confidence_threshold: 0.5
+  device: "cuda"             # inference device for SAM3
+  confidence_threshold: 0.5  # minimum confidence score for accepted detections
   output_npz: "/shared/pipeline_io/sam3_output.npz"
   output_png: "/shared/pipeline_io/sam3_output.png"
-  pad_bb: 5
-  label_size: 6
+  pad_bb: 5      # padding added around predicted bounding boxes in pixels
+  label_size: 6  # annotation text size for visualization
 
 contact_graspnet:
   checkpoint_dir: /app/contact_graspnet/contact_graspnet/checkpoints/scene_test_2048_bs3_hor_sigma_001
   output_png: /shared/pipeline_io/cgn_annotated_output.png
   heatmap_dir: /shared/debug/cgn/heatmap
+  sel_grasps: /shared/pipeline_io/selected_grasps.npz
 
   prediction:
-    z_min: 0.0
-    z_max: 2.0
-    filter_grasps: true
-    local_regions: true
-    forward_passes: 1
-    skip_border_objects: True
-    margin_px: 5
-    segmap_id: 4 # Gets used only when object selection is skipped (use_obj_selection: false)
+    z_min: 0.0                  # minimum valid depth for grasp prediction in meters
+    z_max: 2.0                  # maximum valid depth for grasp prediction in meters
+    filter_grasps: true         # remove implausible or low-quality grasp proposals
+    local_regions: true         # predict grasps in segmented/local object regions
+    forward_passes: 1           # number of model forward passes
+    skip_border_objects: True   # ignore objects too close to image border
+    margin_px: 5                # pixel margin used for border/object filtering
+    segmap_id: 4                # segmentation id used only if object selection is disabled
 
   selection:
-    num_grasps: 4
-    top_score_candidates: 10
-    gripper_width: 0.16
+    num_grasps: 1               # final number of grasps to keep
+    top_score_candidates: 10    # number of top-scoring candidates considered before final selection
+    gripper_width: 0.16         # gripper opening width assumed during selection in meters
 
-    dbscan_clustering: true # otherwise num_grasps top score candidates are selected 
+    dbscan_clustering: true     # cluster similar grasps before final selection
     dbscan:
-      min_score: 0.5          # filter weak grasps first
-      eps: 1.4                # cluster radius (after normalization)
-      min_samples: 1          # keep small clusters
-      orientation_weight: 0.3 # balance position vs orientation
+      min_score: 0.5            # discard weak grasps before clustering
+      eps: 1.4                  # DBSCAN neighborhood radius after normalization
+      min_samples: 1            # minimum samples required to form a cluster
+      orientation_weight: 0.3   # weight of orientation relative to position in clustering distance
 
   gripper_projection:
-    draw_grip_opening_bigger: true
-    increase_grip_opening_by: 0.00
-    gripper_line_width: 1
-    number_line_width: 1
-
-  camera:
-    fallback_fx: 525.0
-    fallback_fy: 525.0
-    fallback_cx: null
-    fallback_cy: null
+    one_img_per_grasp: true          # export one annotated image per grasp
+    draw_grip_opening_bigger: true   # visually enlarge projected gripper opening for readability
+    increase_grip_opening_by: 0.00   # additional opening added only in visualization, in meters
+    gripper_line_width: 1            # line width of projected gripper overlay
+    number_line_width: 1             # line width of projected grasp index labels
 
 llm:
-  max_completion_tokens: 1000
+  max_completion_tokens: 1000  # maximum number of generated output tokens
+  
   prompt_path: /app/llm/prompts.yaml
   schema_path: /app/llm/schemas
 
+rendering:
+  render:
+    width: 2000                   # output image width in pixels
+    height: 1500                  # output image height in pixels
+    max_points: 1200000           # maximum number of point cloud points used for rendering
+
+    gripper_width: 0.08           # default gripper opening if no opening is provided, in meters
+    gripper_opening_offset: 0.02  # added offset to predicted gripper opening in meters
+    finger_len: 0.05              # rendered finger length in meters
+
+    point_size: 13.0              # rendered point size for point cloud visualization
+    line_radius: 0.003            # cylinder radius for rendered grasp lines in meters
+
+    label_offset: -0.02           # 3D offset of label anchor along approach direction in meters
+    approach_offset: 0.05         # offset of gripper bridge from grasp origin in meters
+    label_left_shift_px: 15       # 2D label shift to the left in pixels
+    label_font_scale: 1.5         # OpenCV font scale for grasp numbers
+    label_text_thickness: 6       # thickness of colored label text
+    label_outline_thickness: 10   # thickness of black text outline
+
+    background_rgba: [1.0, 1.0, 1.0, 1.0]  # render background color as RGBA values
+    colormap: "rainbow"              # matplotlib colormap used for grasp coloring
+
+  output:
+    output_dir: "/shared/pipeline_io"
+    left_view_filename: "grasps_left_view.png"
+    right_view_filename: "grasps_right_view.png"
+
+  camera_views:
+    top:
+      eye_dir: [0.9, 1.7, -2.8]   # camera viewing direction vector for top render
+      up: [0.0, 0.0, -1.0]        # camera up vector for top render
+      dist: 0.8                   # camera distance from scene center in meters
+      fov: 40.0                   # field of view in degrees
+
+    front:
+      eye_dir: [-0.9, 1.7, -2.8]  # camera viewing direction vector for front render
+      up: [0.0, 0.0, -1.0]        # camera up vector for front render
+      dist: 0.6                   # camera distance from scene center in meters
+      fov: 45.0                   # field of view in degrees

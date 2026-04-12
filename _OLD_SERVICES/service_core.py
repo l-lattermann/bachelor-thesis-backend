@@ -48,6 +48,8 @@ def load_model() -> segmentation.UOISNet3D:
     return _model
 
 
+# TODO: REMOVE
+
 def run_uois_on_npz(npz_path: str) -> dict:
     """
     Run UOIS segmentation on a given .npz file.

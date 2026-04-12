@@ -22,8 +22,7 @@ MODEL = None
 
 class LLMRequest(BaseModel):
     prompt_name: str
-    full_img_path: str | None = None
-    zoomed_img_path: str | None = None
+    image_paths: list[str] = Field(default_factory=list)
     prompt_vars: dict = Field(default_factory=dict)
 
 
@@ -60,7 +59,9 @@ def startup():
 
     client = OpenAI(base_url=base_url, api_key=api_key)
 
-    print("=== LLM SERVICE ===")
+    print("===============================")
+    print("===        LLM SERVICE       ==")
+    print("===============================")
     print(f"Base URL: {base_url}")
     print(f"Model: {MODEL}")
     print(f"Prompts: {list(prompts)}")
@@ -76,25 +77,35 @@ def health():
 def generate(req: LLMRequest):
     if req.prompt_name not in prompts:
         raise HTTPException(status_code=404, detail="Prompt not found")
+
     if req.prompt_name not in schemas:
         raise HTTPException(status_code=404, detail="Schema not found")
 
+    if not req.image_paths:
+        raise HTTPException(status_code=400, detail="image_paths required")
+
+    if req.prompt_vars is None:
+        raise HTTPException(status_code=400, detail="prompt_vars required")
+
     prompt = prompts[req.prompt_name]
     system = prompt["system"]
-    user = prompt.get("user_template", "").format(**req.prompt_vars)
 
-    user_content = [{"type": "input_text", "text": user}]
+    try:
+        user_text = prompt["user_template"].format(**req.prompt_vars)
+    except KeyError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Missing prompt variable: {e.args[0]}",
+        )
 
-    if req.zoomed_img_path:
+    user_content = [
+        {"type": "input_text", "text": user_text},
+    ]
+
+    for path in req.image_paths:
         user_content.append({
             "type": "input_image",
-            "image_url": image_to_data_url(req.zoomed_img_path),
-        })
-
-    if req.full_img_path:
-        user_content.append({
-            "type": "input_image",
-            "image_url": image_to_data_url(req.full_img_path),
+            "image_url": image_to_data_url(path),
         })
 
     try:
@@ -120,6 +131,16 @@ def generate(req: LLMRequest):
             },
             max_output_tokens=LLM_CFG["max_completion_tokens"],
         )
-        return {"response": json.loads(res.output_text)}
+
+        output_text = res.output_text
+        if not output_text:
+            raise HTTPException(status_code=500, detail="Empty output")
+
+        return {"response": json.loads(output_text)}
+
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"Invalid JSON: {e}")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"OpenAI API error: {e}")

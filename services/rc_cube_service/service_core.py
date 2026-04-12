@@ -13,7 +13,7 @@ class RcCubeGrpcClient:
         if not ip:
             raise("RC_CUBE init got no IP Adress")
 
-        self.rc_cube_socket_adress = ip
+        self.rc_cube_socket_address = ip
         self.timeout = cfg["timeout_sec"]
         self.max_message_size = cfg["max_message_size_mb"] * 1024 * 1024
 
@@ -31,7 +31,7 @@ class RcCubeGrpcClient:
         timeout = timeout or self.timeout
 
         channel = grpc.insecure_channel(
-            self.rc_cube_socket_adress,
+            self.rc_cube_socket_address,
             options=[("grpc.max_receive_message_length", self.max_message_size)],
         )
         stub = pb2_grpc.ImageInterfaceStub(channel)

@@ -1,16 +1,25 @@
-# environment variables
+# env
 .env
 
-*.pyc
+# python
 __pycache__/
+*.py[cod]
+
+# macOS
+.DS_Store
 **/.DS_Store
-repo-backup.bundle
-.ruff_cache
-OCID-dataset
-services/sam_service/checkpoints/*
-debugging_scripts/*
-debugging_scripts/contact_graspnet
-shared/debug/rc_cube
-shared/debug/cgn/heatmap/*
+
+# caches
+.ruff_cache/
+
+# local envs
+.venv/
+venv/
 *.venv
 *venv
+
+
+# datasets
+OCID-dataset/
+
+

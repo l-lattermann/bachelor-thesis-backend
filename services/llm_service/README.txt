@@ -9,7 +9,7 @@ curl -X POST http://localhost:8004/generate \
     "prompt_vars": {
       "object_query": "red box"
     }
-  }'
+  }' | jq
 
 Input:
 - prompt_name: name of the prompt and schema
