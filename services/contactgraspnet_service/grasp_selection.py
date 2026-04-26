@@ -71,7 +71,10 @@ def dbscan_clustering(
     contacts = np.atleast_2d(contacts).astype(np.float32)
     openings = _normalize_openings(openings, len(grasps))
 
+    print(f"[DBSCAN] init: g={len(grasps)} s={len(scores)} c={len(contacts)}")
+
     if len(grasps) == 0 or len(scores) == 0 or len(contacts) == 0:
+        print("[DBSCAN] empty input")
         return (
             np.empty((0, 4, 4), dtype=np.float32),
             np.array([], dtype=np.float32),
@@ -82,6 +85,7 @@ def dbscan_clustering(
     original_best_idx = int(np.argmax(scores))
 
     keep = scores >= float(min_score)
+    print(f"[DBSCAN] score filter: kept={int(np.sum(keep))}/{len(scores)} (min={min_score})")
 
     grasps = grasps[keep]
     scores = scores[keep]
@@ -89,6 +93,7 @@ def dbscan_clustering(
     openings = openings[keep] if len(openings) > 0 else openings
 
     if len(grasps) == 0:
+        print("[DBSCAN] all filtered out")
         return (
             np.empty((0, 4, 4), dtype=np.float32),
             np.array([], dtype=np.float32),
@@ -112,9 +117,11 @@ def dbscan_clustering(
 
     labels = DBSCAN(eps=eps, min_samples=min_samples).fit_predict(X)
 
-    selected_idx = []
-
     unique_labels = [lab for lab in np.unique(labels) if lab != -1]
+    n_noise = int(np.sum(labels == -1))
+    print(f"[DBSCAN] clusters={len(unique_labels)} noise={n_noise}")
+
+    selected_idx = []
 
     for cluster_id in unique_labels:
         cluster_indices = np.where(labels == cluster_id)[0]
@@ -124,8 +131,10 @@ def dbscan_clustering(
         best_local = cluster_indices[np.argmax(scores[cluster_indices])]
         selected_idx.append(best_local)
 
+    print(f"[DBSCAN] after clustering: {len(selected_idx)}")
+
     if len(selected_idx) == 0:
-        print("CLUSTERING FAILED")
+        print("[DBSCAN] fallback top-k")
         selected_idx = np.argsort(scores)[::-1][:num_grasps]
         selected_idx = np.array(selected_idx, dtype=np.int32)
 
@@ -134,6 +143,8 @@ def dbscan_clustering(
         selected_idx = selected_idx[np.argsort(scores[selected_idx])[::-1]]
 
         if len(selected_idx) > num_grasps:
+            print(f"[DBSCAN] reduce {len(selected_idx)} -> {num_grasps}")
+
             candidate_contacts = contacts[selected_idx]
 
             chosen = [0]
@@ -157,6 +168,7 @@ def dbscan_clustering(
             selected_idx = selected_idx[np.array(chosen, dtype=np.int32)]
 
     if best_idx not in selected_idx:
+        print("[DBSCAN] reinserting best grasp")
         if len(selected_idx) < num_grasps:
             selected_idx = np.append(selected_idx, best_idx)
         else:
@@ -168,6 +180,8 @@ def dbscan_clustering(
 
     if len(selected_idx) > num_grasps:
         selected_idx = selected_idx[:num_grasps]
+
+    print(f"[DBSCAN] final: {len(selected_idx)}")
 
     selected_grasps = grasps[selected_idx]
     selected_scores = scores[selected_idx]

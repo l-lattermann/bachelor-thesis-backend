@@ -1,50 +1,28 @@
 {
   "type": "object",
   "properties": {
-    "inferred_task": {
-      "type": "string",
-      "description": "What the LLM understood from the user command (e.g., 'Handover to human', 'Bin picking', 'Tool use')."
-    },
     "selected_grasp_id": {
       "type": ["integer", "null"],
-      "description": "The ID of the best executable grasp that fits the task. Return null if no grasp is valid."
+      "description": "Best physically valid and safe grasp. Null if none are safe."
     },
-    "final_decision_reason": {
-      "type": "string",
-      "description": "Final summary explaining the choice, balancing physical contact quality with task suitability (e.g., 'Grasp 3 makes solid contact on the metal shaft, leaving the handle free for the user.')."
+    "scores": {
+      "type": ["object", "null"],
+      "description": "Scores for the selected grasp only. Null if no grasp is selected.",
+      "properties": {
+        "contact": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "stability": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "collision": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "safe_for_human": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "total": { "type": "integer", "minimum": 0, "maximum": 7 }
+      },
+      "required": ["contact", "stability", "collision", "safe_for_human", "total"],
+      "additionalProperties": false
     },
-    "evaluations": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "grasp_id": { "type": "integer" },
-          "physics_and_task_critique": { 
-            "type": "string", 
-            "description": "Detailed observation of physical gaps, plus how the grasp placement impacts the intended task." 
-          },
-          "scores": {
-            "type": "object",
-            "properties": {
-              "contact_validity": { "type": "integer", "minimum": 0, "maximum": 2 },
-              "lift_stability": { "type": "integer", "minimum": 0, "maximum": 2 },
-              "approach_collision": { "type": "integer", "minimum": 0, "maximum": 2 },
-              "retreat_collision": { "type": "integer", "minimum": 0, "maximum": 2 },
-              "task_suitability": { "type": "integer", "minimum": 0, "maximum": 2 },
-              "total_score": { "type": "integer", "minimum": 0, "maximum": 10 }
-            },
-            "required": [
-              "contact_validity", "lift_stability", "approach_collision", 
-              "retreat_collision", "task_suitability", "total_score"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "required": ["grasp_id", "physics_and_task_critique", "scores"],
-        "additionalProperties": false
-      }
+    "safety_reason": {
+      "type": ["string", "null"],
+      "description": "Short explanation (1–2 sentences) of why the grasp is safe or unsafe (e.g., avoids breaking risk, does not disturb other objects, maintains stable control). Null if no grasp is selected."
     }
   },
-  "required": ["inferred_task", "selected_grasp_id", "final_decision_reason", "evaluations"],
+  "required": ["selected_grasp_id", "scores", "safety_reason"],
   "additionalProperties": false
 }

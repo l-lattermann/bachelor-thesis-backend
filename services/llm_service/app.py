@@ -98,49 +98,38 @@ def generate(req: LLMRequest):
             detail=f"Missing prompt variable: {e.args[0]}",
         )
 
-    user_content = [
-        {"type": "input_text", "text": user_text},
-    ]
-
+    user_content = [{"type": "text", "text": user_text}]
     for path in req.image_paths:
         user_content.append({
-            "type": "input_image",
-            "image_url": image_to_data_url(path),
+            "type": "image_url",
+            "image_url": {"url": image_to_data_url(path)}
         })
 
     try:
-        res = client.responses.create(
+        res = client.chat.completions.create(
             model=MODEL,
-            input=[
-                {
-                    "role": "system",
-                    "content": [{"type": "input_text", "text": system}],
-                },
-                {
-                    "role": "user",
-                    "content": user_content,
-                },
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user_content},
             ],
-            text={
-                "format": {
-                    "type": "json_schema",
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
                     "name": req.prompt_name,
                     "strict": True,
                     "schema": schemas[req.prompt_name],
                 }
             },
-            max_output_tokens=LLM_CFG["max_completion_tokens"],
+            max_completion_tokens=LLM_CFG.get("max_completion_tokens", 2000),
         )
 
-        output_text = res.output_text
+        output_text = res.choices[0].message.content
         if not output_text:
-            raise HTTPException(status_code=500, detail="Empty output")
+            raise HTTPException(status_code=500, detail="Empty output from model")
 
         return {"response": json.loads(output_text)}
 
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"Invalid JSON: {e}")
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"OpenAI API error: {e}")
+        # Better error logging for debugging
+        print(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

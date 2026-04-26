@@ -1,7 +1,0 @@
-disparity:
-  scale: 0.0625
-  offset: 0.0
-  invalid: 0.0
-  baseline_m: 0.16005
-  delta_d: null
-  encoding: mono16

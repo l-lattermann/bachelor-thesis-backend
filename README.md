@@ -109,18 +109,6 @@ curl -X POST http://localhost:8000/run_pipeline \
 ```
 
 
-## Data Flow
-
-RC Cube → point cloud + RGB  
-↓  
-SAM3 → segmentation masks  
-↓  
-Contact-GraspNet → grasp candidates  
-↓  
-Render Service → visualization (top + front)  
-↓  
-LLM → semantic grasp selection  
-
 
 ## Shared Storage
 
@@ -194,15 +182,4 @@ Missing models:
 - Easy to extend with new modules  
 
 
-## Minimal Dev Workflow
-
-```
-docker compose up
-edit code
-```
-
-→ changes live via volume mounts
-
-
----
 

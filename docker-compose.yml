@@ -45,7 +45,7 @@ services:
       NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
     gpus: all
     restart: unless-stopped
-    
+  
   contactgraspnet:
     build: ./services/contactgraspnet_service
     ports:

@@ -95,6 +95,7 @@ def render(req: RenderRequest):
             "npz_path": result["npz_path"],
             "top_render_path": result["top_render_path"],
             "front_render_path": result["front_render_path"],
+            "graps_scores": result["graps_scores"],
         }
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))

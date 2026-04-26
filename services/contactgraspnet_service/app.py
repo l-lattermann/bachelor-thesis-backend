@@ -67,13 +67,30 @@ def inference(req: InferenceRequest):
             object_id=object_id,
         )
 
-        heatmap_path = save_grasp_score_heatmap(
-            rgb=run_result["rgb"],
-            K=run_result["K"],
-            contact_pts=run_result["contact_pts"],
-            pred_grasps_cam=run_result["pred_grasps_cam"],
-            scores=run_result["scores"],
-        )
+        if CFG["project"]["debug"]:
+            print("\n===== HEATMAP DEBUG =====")
+
+            for k in run_result["pred_grasps_cam"].keys():
+                pts = run_result["contact_pts"].get(k, [])
+                grasps = run_result["pred_grasps_cam"].get(k, [])
+                sc = run_result["scores"].get(k, [])
+
+                print(f"key: {k}")
+                print(f"  contact_pts: {len(pts)}")
+                print(f"  pred_grasps_cam: {len(grasps)}")
+                print(f"  scores: {len(sc)}")
+
+            print("=========================\n")
+            heatmap_path = save_grasp_score_heatmap(
+                rgb=run_result["rgb"],
+                K=run_result["K"],
+                contact_pts=run_result["contact_pts"],
+                pred_grasps_cam=run_result["pred_grasps_cam"],
+                scores=run_result["scores"],
+            )
+
+        else:
+            heatmap_path = None
 
         proc_result = process_contact_graspnet_result(
             result=run_result,
@@ -96,18 +113,6 @@ def inference(req: InferenceRequest):
             rgb=run_result["rgb"],
             pc_colors=run_result["pc_colors"],
         )
-
-        if CFG["project"]["debug"]:
-            heatmap_path = save_grasp_score_heatmap(
-                rgb=run_result["rgb"],
-                K=run_result["K"],
-                contact_pts=proc_result["contact_pts"],
-                pred_grasps_cam=proc_result["pred_grasps_cam"],
-                scores=proc_result["scores"],
-            )
-
-        else:
-            heatmap_path = None
 
         return {
             "sel_grasps_npz": sel_grasps_npz,

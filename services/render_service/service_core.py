@@ -237,6 +237,8 @@ def normalize_colors(pc_colors):
     return pc_colors
 
 
+import numpy as np
+
 def build_scene_objects(pc_full, pc_colors, pred_grasps_cam, scores, gripper_openings, runtime_cfg):
     objects = []
     labels = []
@@ -253,6 +255,8 @@ def build_scene_objects(pc_full, pc_colors, pred_grasps_cam, scores, gripper_ope
 
     cm = plt.get_cmap(runtime_cfg["colormap"])
     all_grasps = []
+    all_scores = []
+
     cam_pose = np.eye(4, dtype=np.float64)
 
     for k in pred_grasps_cam.keys():
@@ -266,13 +270,20 @@ def build_scene_objects(pc_full, pc_colors, pred_grasps_cam, scores, gripper_ope
             openings = np.asarray(gripper_openings[k], dtype=np.float32).reshape(-1)
             openings = openings + float(runtime_cfg["gripper_opening_offset"])
 
-        for T, o in zip(grasps, openings):
+        s = np.asarray(scores[k], dtype=np.float32).reshape(-1)
+
+        for T, o, sc in zip(grasps, openings, s):
             all_grasps.append((T, o))
+            all_scores.append(float(sc))
+
+    grasp_id_to_score = {
+        str(i): score for i, score in enumerate(all_scores, start=1)
+    }
 
     n_total = max(len(all_grasps), 1)
 
     mesh_id = 0
-    for grasp_idx, (T, o) in enumerate(all_grasps, start=1):
+    for grasp_idx, ((T, o), sc) in enumerate(zip(all_grasps, all_scores), start=1):
         color = cm((grasp_idx - 1) / n_total)[:3]
 
         meshes, label_pos = create_grasp_meshes(
@@ -291,12 +302,14 @@ def build_scene_objects(pc_full, pc_colors, pred_grasps_cam, scores, gripper_ope
             "text": str(grasp_idx),
             "pos": label_pos,
             "color": tuple(int(255 * c) for c in color),
+            "score": float(sc),
         })
 
         grasp_centers.append(T[:3, 3])
 
     grasp_centers = np.asarray(grasp_centers, dtype=np.float64)
-    return objects, labels, grasp_centers
+
+    return objects, labels, grasp_centers, grasp_id_to_score
 
 
 def add_objects_to_offscreen_scene(renderer, objects, runtime_cfg):
@@ -456,6 +469,7 @@ def _render_view_internal(renderer, objects, labels, grasp_centers, out_path, ey
     out_path.parent.mkdir(parents=True, exist_ok=True)
     o3d.io.write_image(str(out_path), o3d.geometry.Image(img_np))
 
+
 def render_view(objects, labels, grasp_centers, out_path, eye_dir, up, dist, fov, runtime_cfg):
     if RENDER_THREAD is None:
         raise RuntimeError("Render worker is not started.")
@@ -504,7 +518,7 @@ def render_from_npz(npz_path: str, runtime_cfg: dict) -> dict:
         if pc_colors is not None:
             pc_colors = np.asarray(pc_colors)[idx]
 
-    objects, labels, grasp_centers = build_scene_objects(
+    objects, labels, grasp_centers, grasp_id_to_score = build_scene_objects(
         pc_full=pc_full,
         pc_colors=pc_colors,
         pred_grasps_cam=pred_grasps_cam,
@@ -549,5 +563,6 @@ def render_from_npz(npz_path: str, runtime_cfg: dict) -> dict:
         "npz_path": str(npz_path),
         "top_render_path": str(top_out_path),
         "front_render_path": str(front_out_path),
+        "graps_scores": grasp_id_to_score,
     }
 
